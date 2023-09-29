@@ -1,53 +1,77 @@
 #include <iostream>
-#include "include/VimbaProvider.hpp" 
+#include <stdexcept>
 #include <VmbCPP/VmbCPP.h>
+#include "include/VimbaProvider.hpp" 
 
 using namespace VmbCPP;
 
-Disco2Camera::VimbaProvider::VimbaProvider(){}
+Disco2Camera::VimbaProvider::VimbaProvider() : sys(VmbSystem::GetInstance()){
+    VmbErrorType err = sys.Startup();
 
-Disco2Camera::VimbaProvider::~VimbaProvider(){}
-
-void Disco2Camera::VimbaProvider::GetCameras(){
-    VmbSystem& sys = VmbSystem::GetInstance();  // Get a reference to the VimbaSystem singleton
-
-    VmbVersionInfo_t versionInfo;
-    sys.QueryVersion(versionInfo);
-    std::cout << "Vmb Version Major: " << versionInfo.major << " Minor: " << versionInfo.minor << " Patch: " << versionInfo.patch << "\n\n";
-
-    VmbErrorType err = sys.Startup();           // Initialize the Vmb API
     if (VmbErrorSuccess == err)
     {
+        throw std::runtime_error("Could not start system. Error code: " + std::to_string(err) );
+    }
+}
 
-        TransportLayerPtrVector transportlayers;             // A vector of std::shared_ptr<AVT::VmbAPI::TransportLayer> objects
-        err = sys.GetTransportLayers(transportlayers);       // Fetch all transport layers
-        if (VmbErrorSuccess == err) std::cout << "TransportLayers found: " << transportlayers.size() << "\n";
+Disco2Camera::VimbaProvider::~VimbaProvider(){
+    sys.Shutdown();
+}
 
-        InterfacePtrVector interfaces;             // A vector of std::shared_ptr<AVT::VmbAPI::Interface> objects
-        err = sys.GetInterfaces(interfaces);       // Fetch all interfaces
-        if (VmbErrorSuccess == err) std::cout << "Interfaces found: " << interfaces.size() << "\n";
+std::vector<CameraPtr> Disco2Camera::VimbaProvider::GetCameras(){
+    TransportLayerPtrVector transportlayers;
+    VmbErrorType err = sys.GetTransportLayers(transportlayers);
 
-        CameraPtrVector cameras;                // A vector of std::shared_ptr<AVT::VmbAPI::Camera> objects
-        err = sys.GetCameras(cameras);          // Fetch all cameras
-        if (VmbErrorSuccess == err)
-        {
-            std::cout << "Cameras found: " << cameras.size() << "\n\n";
+    InterfacePtrVector interfaces;
+    err = sys.GetInterfaces(interfaces);
 
-            // Query all static details of all known cameras and print them out.
-            // We don't have to open the cameras for that.
-            for(const CameraPtr& cam : cameras){
-                std::cout << "asdf";
-            }
-        }
-        else
-        {
-            std::cout << "Could not list cameras. Error code: " << err << "\n";
-        }
+    CameraPtrVector cameras;
+    err = sys.GetCameras(cameras);
 
-        sys.Shutdown();
+    if (VmbErrorSuccess == err)
+    {
+        return cameras;
     }
     else
     {
-        std::cout << "Could not start system. Error code: " << err << "\n";
+        sys.Shutdown();
+        throw std::runtime_error("Could not list cameras. Error code: " + std::to_string(err) );
     }
+}
+
+FramePtr Disco2Camera::VimbaProvider::AqcuireFrame(CameraPtr cam){
+    VmbErrorType err = cam->Open(VmbAccessModeFull);
+
+    if (err != VmbErrorSuccess)
+    {
+        throw std::runtime_error("Could not open camera, err=" + std::to_string(err));
+    }
+
+    FramePtr frame;
+    
+    err = cam->AcquireSingleImage(frame, 5000);
+    
+    if (err != VmbErrorSuccess)
+    {
+        throw std::runtime_error("Could not acquire frame, err=" + std::to_string(err));
+    }
+
+    FeaturePtrVector features;
+    cam->GetFeatures(features);
+
+    for(FeaturePtr f : features){
+        std::string desc;
+        std::string cat;
+        std::string value;
+        
+        f->GetDescription(desc);
+        f->GetCategory(cat);
+        f->GetValue(value);
+
+        std::cout << desc << " " << cat << " " << value << std::endl;
+    }
+
+    cam->Close();
+
+    return frame;
 }

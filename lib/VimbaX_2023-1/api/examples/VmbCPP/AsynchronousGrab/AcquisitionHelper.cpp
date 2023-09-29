@@ -46,8 +46,23 @@ public:
 
     void FrameReceived(const FramePtr frame)
     {
-        std::cout << "." << std::flush;
         m_pCamera->QueueFrame(frame);
+
+        unsigned int size;
+        unsigned char *buffer;
+        frame->GetBufferSize(size);
+
+        VmbPixelFormatType format;
+        VmbPayloadType type;
+
+        frame->GetPixelFormat(format);
+        frame->GetPayloadType(type);
+
+        frame->GetImage(buffer);
+
+        std::cout << " " << format << " " << type << "\n" << std::flush;
+
+        //delete[] buffer;
     };
 };
 
