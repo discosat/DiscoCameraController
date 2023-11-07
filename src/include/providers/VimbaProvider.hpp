@@ -22,6 +22,8 @@ namespace Disco2Camera{
             void SetPixleFormat(VmbCPP::CameraPtr cam);
             void SetExposure(VmbCPP::CameraPtr cam);
             void SetGain(VmbCPP::CameraPtr cam);
+
+            std::string GetFeature(std::string feature_name, VmbCPP::CameraPtr camera);
     };
 }
 

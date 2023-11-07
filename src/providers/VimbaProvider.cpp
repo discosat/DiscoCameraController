@@ -6,18 +6,12 @@
 using namespace VmbCPP;
 
 Disco2Camera::VimbaProvider::VimbaProvider() : sys(VmbSystem::GetInstance()){
-    VmbErrorType err = sys.Startup();
+    VmbErrorType err = this->sys.Startup();
 
     if (err != VmbErrorSuccess)
     {
         /* code */
     }
-    
-    // this->cameras = GetCameras();
-
-    // for(CameraPtr cam : cameras){
-    //     err = cam->Open(VmbAccessModeExclusive);
-    // }
 
     if (VmbErrorSuccess != err)
     {
@@ -67,6 +61,31 @@ void GigEAdjustPacketSize(CameraPtr camera)
     }
 }
 
+std::string Disco2Camera::VimbaProvider::GetFeature(std::string feature_name, VmbCPP::CameraPtr camera){
+    StreamPtrVector streams;
+    std::string feature_value;
+    VmbErrorType err = camera->GetStreams(streams);
+
+    if (err != VmbErrorSuccess || streams.empty())
+    {
+        throw std::runtime_error("Could not get stream modules, err=" + std::to_string(err));
+    }
+
+    FeaturePtr feature;
+    std::cout << feature_name << std::endl;
+    err = streams[0]->GetFeatureByName(feature_name.c_str(), feature);
+
+    if (err == VmbErrorSuccess)
+    {
+        feature->GetValue(feature_value);
+        return feature_value;
+    } else {
+        std::cout << err << std::endl;
+    }
+
+    return "";
+}
+
 std::vector<CameraPtr> Disco2Camera::VimbaProvider::GetCameras(){
     CameraPtrVector cams;
     VmbErrorType err = sys.GetCameras(cams);
@@ -102,14 +121,12 @@ FramePtr Disco2Camera::VimbaProvider::AqcuireFrame(VmbCPP::CameraPtr cam, float 
         }
 
         if (VmbErrorSuccess == err) {
-            std::cout << exposure << std::endl;
             err = pExposureFeature->SetValue(exposure); // in us, 15000.0us = 15ms
         }
 
         err = cam->GetFeatureByName("Gain", pGainFeature);
 
         if (VmbErrorSuccess == err) {
-            std::cout << gain << std::endl;
             err = pGainFeature->SetValue(gain); // in us, 15000.0us = 15ms
         }
     }

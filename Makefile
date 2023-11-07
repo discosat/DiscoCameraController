@@ -18,8 +18,8 @@ release:
 	make
 
 debug:
-	mkdir -p ./build/release && \
+	mkdir -p ./build/debug && \
 	export Vmb_DIR=$(current_dir)lib/VimbaX_2023-1/api/lib/cmake/vmb/ && \
-	cmake -S ./ -B ./build/release -DCMAKE_BUILD_TYPE=Debug && \
-	cd ./build/release && \
+	cmake -S ./ -B ./build/debug -DCMAKE_BUILD_TYPE=Debug && \
+	cd ./build/debug && \
 	make
