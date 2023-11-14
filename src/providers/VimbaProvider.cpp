@@ -61,29 +61,21 @@ void GigEAdjustPacketSize(CameraPtr camera)
     }
 }
 
-std::string Disco2Camera::VimbaProvider::GetFeature(std::string feature_name, VmbCPP::CameraPtr camera){
-    StreamPtrVector streams;
-    std::string feature_value;
-    VmbErrorType err = camera->GetStreams(streams);
-
-    if (err != VmbErrorSuccess || streams.empty())
-    {
-        throw std::runtime_error("Could not get stream modules, err=" + std::to_string(err));
-    }
-
+double Disco2Camera::VimbaProvider::GetFeature(std::string feature_name, VmbCPP::CameraPtr camera){
+    double feature_value;
     FeaturePtr feature;
-    std::cout << feature_name << std::endl;
-    err = streams[0]->GetFeatureByName(feature_name.c_str(), feature);
+    VmbErrorType err = camera->GetFeatureByName(feature_name.c_str(), feature);
 
     if (err == VmbErrorSuccess)
     {
-        feature->GetValue(feature_value);
+        err = feature->GetValue(feature_value);
+        
         return feature_value;
     } else {
         std::cout << err << std::endl;
     }
 
-    return "";
+    return 0;
 }
 
 std::vector<CameraPtr> Disco2Camera::VimbaProvider::GetCameras(){

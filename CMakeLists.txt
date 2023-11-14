@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.0)
 
 project(Disco2CameraControl VERSION 1.0 LANGUAGES CXX)
 
+set(Vmb_DIR ${CMAKE_SOURCE_DIR}/lib/VimbaX_2023-1/api/lib/cmake/vmb)
+
 find_package(Vmb REQUIRED COMPONENTS CPP)
 find_package(OpenCV REQUIRED)
 

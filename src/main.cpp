@@ -7,16 +7,19 @@
 #include <filesystem>
 #include <ctime>
 #include <bits/stdc++.h>
+#include <chrono>
 
 namespace fs = std::filesystem;
+
 using namespace Disco2Camera;
+using namespace std::chrono;
 
 // auto exposure paramteres
-const float MAX_EXPOSURE = 1000000.0;
-const size_t STEPS = 8;
+const float MAX_EXPOSURE = 1000000.0; // maximum allowed exposure
+const float MAX_ENTROPY = 400.923; // maximum entropy achieved by a image with 3 channels
+const size_t STEPS = 20;
 const float MIN_EXPOSURE = 10000.0;
-const float EXPOSURE_INTERVAL = 5000.0;
-const float LEARNING_RATE = 10000;
+const float LEARNING_RATE = 20000;
 
 float set_exposure(VmbCPP::CameraPtr cam, VimbaProvider* p){
     float currentExposure = MIN_EXPOSURE, lastEntropy = -1, lastExposure = -1, slope = 1;
@@ -40,16 +43,17 @@ float set_exposure(VmbCPP::CameraPtr cam, VimbaProvider* p){
             lastEntropy = currentEntropy;
             lastExposure = currentExposure;
 
-            currentExposure += EXPOSURE_INTERVAL;
+            currentExposure += LEARNING_RATE;
         } else {
             float exposure_delta = currentExposure - lastExposure;
             float entropy_delta = currentEntropy - lastEntropy;
-            slope = (entropy_delta*LEARNING_RATE)/exposure_delta;
+            slope = (entropy_delta/MAX_ENTROPY)/(exposure_delta/MAX_EXPOSURE); // normalized slope
 
             lastEntropy = currentEntropy;
             lastExposure = currentExposure;
 
-            currentExposure += EXPOSURE_INTERVAL*slope;
+            currentExposure += LEARNING_RATE*slope;
+            std::cout << slope << " " << currentExposure << std::endl;
         }
 
         steps++;
@@ -155,24 +159,10 @@ int main(int argc, char *argv[], char *envp[]){
         cameras.at(0)->Open(VmbAccessModeExclusive);
         exposure = (exposure == 0)?set_exposure(cameras.at(0), vmbProvider):exposure;
 
-        std::cout << 1 << std::endl;
-
-        if(feature_outputs.size() > 0){
-            std::cout << "Timestamp,CameraID,";
-            for(int j = 0; j < feature_outputs.size(); j++){
-                std::cout << feature_outputs[j];
-
-                if(j < feature_outputs.size()-1){
-                    std::cout << ",";
-                }
-            }
-            std::cout << std::endl;
-        }
-
+        std::cout << duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count() << ",";
         for(int i = 0; i < num_images; i++){
-            std::cout << 2 << std::endl;
             VmbCPP::FramePtr frame = vmbProvider->AqcuireFrame(cameras.at(0), exposure, 0);
-            std::cout << 3 << std::endl;
+
             if(save_images){
                 // get image data
                 unsigned char* buffer;
@@ -187,21 +177,19 @@ int main(int argc, char *argv[], char *envp[]){
                 cv::Mat img(height, width, CV_8UC3, buffer);
                 cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
 
-                std::cout << 4 << std::endl;
                 // save to path
                 fs::path dir (image_out);
                 fs::path file ("image_" + std::to_string(std::time(0)) + "_" + std::to_string(exposure) + ".png");
                 std::string full_path = (dir / file).string();
-                std::cout << 5 << std::endl;
                 imwrite(full_path, img);
             }
         }
 
-        std::cout << std::time(0) << "," << 1;
+        std::cout << duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count() << "," << 1;
         if(feature_outputs.size() > 0){
             for(int j = 0; j < feature_outputs.size(); j++){
                 auto feature = feature_outputs.at(j);
-                std::string feature_val = vmbProvider->GetFeature(feature, cameras.at(0));
+                double feature_val = vmbProvider->GetFeature(feature, cameras.at(0));
                 std::cout << "," << feature_val;
             }
         }
