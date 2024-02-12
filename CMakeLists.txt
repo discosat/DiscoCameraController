@@ -13,4 +13,4 @@ add_subdirectory(src/providers)
 add_executable(Disco2CameraControl src/main.cpp)
 
 target_link_libraries(Disco2CameraControl PRIVATE Vmb::CPP ${OpenCV_LIBS} libproviders libhelpers)
-target_include_directories(Disco2CameraControl PRIVATE ${CMAKE_SOURCE_DIR}/src/include/helpers ${CMAKE_SOURCE_DIR}/src/include/providers)
+target_include_directories(Disco2CameraControl PRIVATE ${CMAKE_SOURCE_DIR}/src/include/helpers ${CMAKE_SOURCE_DIR}/src/include/providers ${CMAKE_SOURCE_DIR}/src/include)

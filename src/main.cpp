@@ -2,12 +2,14 @@
 #include <vector>
 #include <VmbCPP/VmbCPP.h>
 #include <opencv2/opencv.hpp>
-#include "VimbaProvider.hpp"
+#include "vimba_provider.hpp"
 #include "exposure_helper.hpp"
+#include "types.hpp"
 #include <filesystem>
 #include <ctime>
 #include <bits/stdc++.h>
 #include <chrono>
+#include "message_queue.hpp"
 
 namespace fs = std::filesystem;
 
@@ -153,6 +155,7 @@ int main(int argc, char *argv[], char *envp[]){
     }
 
     VimbaProvider* vmbProvider = new VimbaProvider();
+    MessageQueue* mq = new MessageQueue();
     std::vector<VmbCPP::CameraPtr> cameras = vmbProvider->GetCameras();
 
     if(cameras.size() > 0){
@@ -177,27 +180,31 @@ int main(int argc, char *argv[], char *envp[]){
                 cv::Mat img(height, width, CV_8UC3, buffer);
                 cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
 
-                // save to path
-                fs::path dir (image_out);
-                fs::path file ("image_" + std::to_string(std::time(0)) + "_" + std::to_string(exposure) + ".png");
-                std::string full_path = (dir / file).string();
-                imwrite(full_path, img);
-            }
-        }
+                ImageBatch batch;
+                batch.mtype = 0;
+                batch.height = height;
+                batch.width = width;
+                batch.channels = 3;
+                batch.num_images = 1;
+                batch.data_size = 3*width*height;
+                batch.data = buffer;
 
-        std::cout << duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count() << "," << 1;
-        if(feature_outputs.size() > 0){
-            for(int j = 0; j < feature_outputs.size(); j++){
-                auto feature = feature_outputs.at(j);
-                double feature_val = vmbProvider->GetFeature(feature, cameras.at(0));
-                std::cout << "," << feature_val;
+                if(mq->SendImage(batch)){
+                    std::cout << "Sending image was successful" << std::endl;
+                }
+
+                // // save to path
+                // fs::path dir (image_out);
+                // fs::path file ("image_" + std::to_string(std::time(0)) + "_" + std::to_string(exposure) + ".png");
+                // std::string full_path = (dir / file).string();
+                // imwrite(full_path, img);
             }
         }
-        std::cout << std::endl;
 
         cameras.at(0)->Close();
     }
 
     delete vmbProvider; 
+    delete mq;
     return 0;
 }

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <VmbCPP/VmbCPP.h>
-#include "VimbaProvider.hpp"
+#include "vimba_provider.hpp"
 
 using namespace VmbCPP;
 
