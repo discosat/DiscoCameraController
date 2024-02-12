@@ -162,7 +162,6 @@ int main(int argc, char *argv[], char *envp[]){
         cameras.at(0)->Open(VmbAccessModeExclusive);
         exposure = (exposure == 0)?set_exposure(cameras.at(0), vmbProvider):exposure;
 
-        std::cout << duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count() << ",";
         for(int i = 0; i < num_images; i++){
             VmbCPP::FramePtr frame = vmbProvider->AqcuireFrame(cameras.at(0), exposure, 0);
 
@@ -191,6 +190,8 @@ int main(int argc, char *argv[], char *envp[]){
 
                 if(mq->SendImage(batch)){
                     std::cout << "Sending image was successful" << std::endl;
+                } else {
+                    std::cout << "Sending image was unsuccessful" << std::endl;
                 }
 
                 // // save to path

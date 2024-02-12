@@ -6,6 +6,7 @@
 #include "message_queue.hpp"
 #include "types.hpp"
 #include <string.h>
+#include <iostream>
 
 MessageQueue::MessageQueue(){}
 
@@ -32,38 +33,55 @@ void* MessageQueue::insertMemory(unsigned char *data, size_t size, int shm_id){
     return shmaddr;
 }
 
-bool MessageQueue::sendMessage(ImageBatch batch){
+bool MessageQueue::sendMessage(ImageBatchMessage batch){
     key_t key;
     int msgQueueId;
 
-    if ((key = ftok("DISCO2IMAGE", 'B')) == -1) {
+    if ((key = ftok("/tmp", 'B')) == -1) {
         perror("ftok");
-        return -1;
+        return false;
     }
 
     if ((msgQueueId = msgget(key, 0644 | IPC_CREAT)) == -1) {
         perror("msgget");
-        return -1;
+        return false;
     }
 
-    if (msgsnd(msgQueueId, &batch, sizeof(batch), 0) == -1) {
+    std::cout << "msgsnd: " << msgQueueId << " " << sizeof(batch)  - sizeof(long) << std::endl;
+
+    if (msgsnd(msgQueueId, &batch, sizeof(batch) - sizeof(long), 0) == -1) {
         perror("msgsnd");
-        return -1;
+        return false;
     }
+
+    return true;
 }
 
 bool MessageQueue::SendImage(ImageBatch batch){
     int memspace;
     void* addr;
 
+    std::cout << "1" << std::endl;
     if(memspace = createMemorySpace(batch.data_size) < 0){
+        std::cout << "Failed to create memspace" << std::endl;
         return false;
     }
 
+    std::cout << "2" << std::endl;
     addr = insertMemory(batch.data, batch.data_size, memspace);
+    std::cout << "Addr: " << addr << std::endl;
 
-    if(addr != NULL){// && sendMessage(batch)){
-        return shmdt(addr) == -1;
+    ImageBatchMessage msg;
+    msg.mtype = 1;
+    msg.height = batch.height;
+    msg.width = batch.width;
+    msg.channels = batch.channels;
+    msg.num_images = batch.num_images;
+    msg.mem_key = memspace;
+    msg.data_size = batch.data_size;
+
+    if(addr != NULL && sendMessage(msg)){
+        return true;
     } else {
         return false;
     }
