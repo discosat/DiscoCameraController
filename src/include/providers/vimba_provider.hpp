@@ -17,7 +17,7 @@ namespace Disco2Camera{
             std::vector<VmbCPP::CameraPtr> GetCameras();
 
             VmbCPP::FramePtr AqcuireFrame(VmbCPP::CameraPtr cam);
-            VmbCPP::FramePtr AqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain);
+            VmbCPP::FramePtrVector AqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain, int numFrames);
             
             void SetPixleFormat(VmbCPP::CameraPtr cam);
             void SetExposure(VmbCPP::CameraPtr cam);

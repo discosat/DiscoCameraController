@@ -7,6 +7,7 @@
 #include "types.hpp"
 #include <string.h>
 #include <iostream>
+#include <unistd.h>
 
 MessageQueue::MessageQueue(){}
 
@@ -18,8 +19,7 @@ int MessageQueue::createMemorySpace(size_t size){
     key_t key = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
     int shm_id = 0;
 
-    if ((shm_id = shmget(key, size, IPC_CREAT | 0666 )) < 0) {
-        perror("shmget");
+    if ((shm_id = shmget(key, size, IPC_CREAT|0600 )) < 0) {
         return -1;
     } else {
         return shm_id;
@@ -28,7 +28,12 @@ int MessageQueue::createMemorySpace(size_t size){
 
 void* MessageQueue::insertMemory(unsigned char *data, size_t size, int shm_id){
     void* shmaddr = shmat(shm_id, NULL, 0);
-    memcpy(shmaddr, data, size); // Copy image batch data to shared memory
+
+    if (shmaddr == (void*)-1) {
+        return NULL;
+    }
+
+    memcpy(shmaddr, data, size * sizeof(unsigned char)); // Copy image batch data to shared memory
 
     return shmaddr;
 }
@@ -47,9 +52,7 @@ bool MessageQueue::sendMessage(ImageBatchMessage batch){
         return false;
     }
 
-    std::cout << "msgsnd: " << msgQueueId << " " << sizeof(batch)  - sizeof(long) << std::endl;
-
-    if (msgsnd(msgQueueId, &batch, sizeof(batch) - sizeof(long), 0) == -1) {
+    if (msgsnd(msgQueueId, &batch, sizeof(batch), 0) == -1) {
         perror("msgsnd");
         return false;
     }
@@ -61,15 +64,11 @@ bool MessageQueue::SendImage(ImageBatch batch){
     int memspace;
     void* addr;
 
-    std::cout << "1" << std::endl;
-    if(memspace = createMemorySpace(batch.data_size) < 0){
-        std::cout << "Failed to create memspace" << std::endl;
+    if((memspace = createMemorySpace(batch.data_size)) < 0){
         return false;
     }
 
-    std::cout << "2" << std::endl;
     addr = insertMemory(batch.data, batch.data_size, memspace);
-    std::cout << "Addr: " << addr << std::endl;
 
     ImageBatchMessage msg;
     msg.mtype = 1;
@@ -77,12 +76,15 @@ bool MessageQueue::SendImage(ImageBatch batch){
     msg.width = batch.width;
     msg.channels = batch.channels;
     msg.num_images = batch.num_images;
-    msg.mem_key = memspace;
+    msg.shm_key = memspace;
     msg.data_size = batch.data_size;
 
-    if(addr != NULL && sendMessage(msg)){
+    if(addr != NULL && sendMessage(msg) && (shmdt(addr)) != -1){
         return true;
     } else {
+        // cleanup
+        shmdt(addr);
+        shmctl(memspace, IPC_RMID, nullptr);
         return false;
     }
 }

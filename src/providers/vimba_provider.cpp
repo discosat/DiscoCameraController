@@ -93,7 +93,7 @@ std::vector<CameraPtr> Disco2Camera::VimbaProvider::GetCameras(){
     }
 }
 
-FramePtr Disco2Camera::VimbaProvider::AqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain){
+FramePtrVector Disco2Camera::VimbaProvider::AqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain, int numFrames){
     FeaturePtr pFormatFeature;
 
     // Set pixel format. For the sake of simplicity we only support Mono and BGR in this example.
@@ -123,14 +123,19 @@ FramePtr Disco2Camera::VimbaProvider::AqcuireFrame(VmbCPP::CameraPtr cam, float 
         }
     }
 
-    FramePtr frame;
-    
-    err = cam->AcquireSingleImage(frame, 5000);
+    FramePtrVector frames;
+
+    for(int i = 0; i < numFrames; i++){
+        FramePtr frame;
+        frames.push_back(frame);
+    }
+
+    err = cam->AcquireMultipleImages(frames, 5000);
 
     if (err != VmbErrorSuccess)
     {
         throw std::runtime_error("Could not acquire frame, err=" + std::to_string(err));
     }
 
-    return frame;
+    return frames;
 }

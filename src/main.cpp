@@ -28,7 +28,8 @@ float set_exposure(VmbCPP::CameraPtr cam, VimbaProvider* p){
     size_t steps = 0;
 
     while(currentExposure < MAX_EXPOSURE && steps < STEPS){
-        VmbCPP::FramePtr frame = p->AqcuireFrame(cam, currentExposure, 0);            
+        VmbCPP::FramePtrVector frames = p->AqcuireFrame(cam, currentExposure, 0, 1);            
+        VmbCPP::FramePtr frame = frames.at(0);
         unsigned int size, width, height;
         frame->GetBufferSize(size);
         frame->GetHeight(height);
@@ -107,12 +108,10 @@ Description:
 
 Required Argument:
   -e EXPOSURE   Set the exposure level (a positive number) or auto.
+  -c CAMERA      Specify the camera to be used in the current burst.
 
 Optional Arguments:
-  -s             Save the processed images.
-  -o PATH        Output path to save the images.
-  -n NUM_IMAGES  Specify the number of images to save (only valid with -s).
-  -f FEATURES    Output a comma-separated list of features.
+  -n NUM_IMAGES  Specify the number of images to save (only valid with -s), default is 1.
     )""";
 
     std::cout << help << std::endl;
@@ -122,25 +121,21 @@ int main(int argc, char *argv[], char *envp[]){
     // parse arguments
     const std::vector<std::string_view> args(argv, argv + argc);
     const std::string_view exposure_arg = get_option(args, "-e");
-    const bool save_images = has_option(args, "-s");
-    const std::string_view image_out = get_option(args, "-o");
+    const std::string_view camera = get_option(args, "-c");
     const std::string_view num_images_arg = get_option(args, "-n");
-    const std::string_view feature_outputs_arg = get_option(args, "-f");
+
+    VimbaProvider* vmbProvider = new VimbaProvider();
+    MessageQueue* mq = new MessageQueue();
+    std::vector<VmbCPP::CameraPtr> cameras = vmbProvider->GetCameras();
+    VmbCPP::CameraPtr cam;
 
     // parsed arguments
     float exposure = 0;
     int num_images = 1;
-    std::vector<std::string> feature_outputs = split_string(std::string(feature_outputs_arg));
 
     if(has_option(args, "-h")){
         print_usage();
         return 0;
-    }
-
-    if(save_images && image_out.size() == 0){
-        std::cerr << "Define the output path to save the images to" << std::endl;
-        print_usage();
-        return 1;
     }
 
     if(exposure_arg.size() > 0){
@@ -154,55 +149,72 @@ int main(int argc, char *argv[], char *envp[]){
         num_images = std::atoi(std::string(num_images_arg).c_str());
     }
 
-    VimbaProvider* vmbProvider = new VimbaProvider();
-    MessageQueue* mq = new MessageQueue();
-    std::vector<VmbCPP::CameraPtr> cameras = vmbProvider->GetCameras();
-
     if(cameras.size() > 0){
-        cameras.at(0)->Open(VmbAccessModeExclusive);
-        exposure = (exposure == 0)?set_exposure(cameras.at(0), vmbProvider):exposure;
+        for(int i = 0; i < cameras.size(); i++){
+            std::string camName = "";
+            cameras.at(i)->GetModel(camName);
 
-        for(int i = 0; i < num_images; i++){
-            VmbCPP::FramePtr frame = vmbProvider->AqcuireFrame(cameras.at(0), exposure, 0);
-
-            if(save_images){
-                // get image data
-                unsigned char* buffer;
-                frame->GetImage(buffer);
-
-                // get image dimensions
-                unsigned int width, height;
-                frame->GetHeight(height);
-                frame->GetWidth(width);
-
-                // convert to open CV matrix and color correct
-                cv::Mat img(height, width, CV_8UC3, buffer);
-                cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
-
-                ImageBatch batch;
-                batch.mtype = 0;
-                batch.height = height;
-                batch.width = width;
-                batch.channels = 3;
-                batch.num_images = 1;
-                batch.data_size = 3*width*height;
-                batch.data = buffer;
-
-                if(mq->SendImage(batch)){
-                    std::cout << "Sending image was successful" << std::endl;
-                } else {
-                    std::cout << "Sending image was unsuccessful" << std::endl;
-                }
-
-                // // save to path
-                // fs::path dir (image_out);
-                // fs::path file ("image_" + std::to_string(std::time(0)) + "_" + std::to_string(exposure) + ".png");
-                // std::string full_path = (dir / file).string();
-                // imwrite(full_path, img);
+            if(camName == camera){
+                cam = cameras.at(i);
             }
         }
+    } else {
+        std::cerr << "No cameras were detected" << std::endl;
+        return 1;
+    }
 
-        cameras.at(0)->Close();
+    std::cout << "Size of pointer: " << sizeof(int*) << " bytes" << std::endl;
+
+    if(cam != NULL && num_images > 0){
+        cam->Open(VmbAccessModeExclusive);
+        exposure = (exposure == 0)?set_exposure(cam, vmbProvider):exposure;
+        VmbCPP::FramePtrVector frames = vmbProvider->AqcuireFrame(cameras.at(0), exposure, 0, num_images);
+        
+        unsigned int width, height, bufferSize;
+        frames.at(0)->GetBufferSize(bufferSize);
+        frames.at(0)->GetWidth(width);
+        frames.at(0)->GetHeight(height);
+
+        unsigned char* total_buffer = new unsigned char[bufferSize*num_images];
+
+        for(int i = 0; i < num_images; i++){
+            unsigned char* buffer;
+            frames.at(i)->GetImage(buffer);
+            std::memcpy((void*)(&total_buffer[i * bufferSize]), buffer, bufferSize * sizeof(unsigned char));
+        }
+
+        ImageBatch batch;
+        batch.height = height;
+        batch.width = width;
+        batch.channels = 3;
+        batch.num_images = num_images;
+        batch.data_size = bufferSize*num_images;
+        batch.data = total_buffer;
+
+        if(mq->SendImage(batch)){
+            std::cout << "Sending image was successful" << std::endl;
+        } else {
+            std::cout << "Sending image was unsuccessful" << std::endl;
+        }
+        
+        delete[] total_buffer;
+        cam->Close();
+    } else {
+        if(num_images <= 0){
+            std::cerr << "Number of images must be greater than zero" << std::endl;
+        }
+
+        if(cam == NULL){
+            std::cerr << "Camera must be one of: ";
+
+            for(int i = 0; i < cameras.size(); i++){
+                std::string camName;
+                cameras.at(i)->GetModel(camName);
+                std::cerr << camName << " ";
+            }
+
+            std::cerr << std::endl;
+        }
     }
 
     delete vmbProvider; 

@@ -5,23 +5,24 @@
 #include <stdint.h>
 
 typedef struct ImageBatch {
-    long mtype;
-    int height;
-    int width;
-    int channels;
-    int num_images;
-    size_t data_size;
+    unsigned int height;
+    unsigned int width;
+    unsigned int channels;
+    unsigned int num_images;
+    unsigned int data_size;
+    int shm_key;
     unsigned char *data;
 } ImageBatch;
 
 typedef struct ImageBatchMessage {
     long mtype;
-    int height;
-    int width;
-    int channels;
-    int num_images;
-    int mem_key;
-    size_t data_size;
+    unsigned int height;
+    unsigned int width;
+    unsigned int channels;
+    unsigned int num_images;
+    unsigned int data_size;
+    int shm_key;
 } ImageBatchMessage;
+
 
 #endif
