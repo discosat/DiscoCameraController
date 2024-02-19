@@ -5,7 +5,7 @@
 
 using namespace VmbCPP;
 
-Disco2Camera::VimbaProvider::VimbaProvider() : sys(VmbSystem::GetInstance()){
+VimbaProvider::VimbaProvider() : sys(VmbSystem::GetInstance()){
     VmbErrorType err = this->sys.Startup();
 
     if (err != VmbErrorSuccess)
@@ -19,7 +19,7 @@ Disco2Camera::VimbaProvider::VimbaProvider() : sys(VmbSystem::GetInstance()){
     }
 }
 
-Disco2Camera::VimbaProvider::~VimbaProvider(){
+VimbaProvider::~VimbaProvider(){
     sys.Shutdown();
 
     // for(CameraPtr cam : cameras){
@@ -61,7 +61,7 @@ void GigEAdjustPacketSize(CameraPtr camera)
     }
 }
 
-double Disco2Camera::VimbaProvider::GetFeature(std::string feature_name, VmbCPP::CameraPtr camera){
+double VimbaProvider::GetFeature(std::string feature_name, VmbCPP::CameraPtr camera){
     double feature_value;
     FeaturePtr feature;
     VmbErrorType err = camera->GetFeatureByName(feature_name.c_str(), feature);
@@ -78,7 +78,7 @@ double Disco2Camera::VimbaProvider::GetFeature(std::string feature_name, VmbCPP:
     return 0;
 }
 
-std::vector<CameraPtr> Disco2Camera::VimbaProvider::GetCameras(){
+std::vector<CameraPtr> VimbaProvider::GetCameras(){
     CameraPtrVector cams;
     VmbErrorType err = sys.GetCameras(cams);
 
@@ -93,7 +93,7 @@ std::vector<CameraPtr> Disco2Camera::VimbaProvider::GetCameras(){
     }
 }
 
-FramePtrVector Disco2Camera::VimbaProvider::AqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain, int numFrames){
+FramePtrVector VimbaProvider::AqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain, int numFrames){
     FeaturePtr pFormatFeature;
 
     // Set pixel format. For the sake of simplicity we only support Mono and BGR in this example.

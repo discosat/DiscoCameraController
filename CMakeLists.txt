@@ -9,8 +9,9 @@ find_package(OpenCV REQUIRED)
 
 add_subdirectory(src/helpers)
 add_subdirectory(src/providers)
+add_subdirectory(${CMAKE_SOURCE_DIR}/lib/libcsp)
 
 add_executable(Disco2CameraControl src/main.cpp)
 
-target_link_libraries(Disco2CameraControl PRIVATE Vmb::CPP ${OpenCV_LIBS} libproviders libhelpers)
+target_link_libraries(Disco2CameraControl PRIVATE Vmb::CPP ${OpenCV_LIBS} libproviders libhelpers csp)
 target_include_directories(Disco2CameraControl PRIVATE ${CMAKE_SOURCE_DIR}/src/include/helpers ${CMAKE_SOURCE_DIR}/src/include/providers ${CMAKE_SOURCE_DIR}/src/include)

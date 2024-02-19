@@ -10,60 +10,11 @@
 #include <bits/stdc++.h>
 #include <chrono>
 #include "message_queue.hpp"
+#include "csp_server.hpp"
 
 namespace fs = std::filesystem;
 
-using namespace Disco2Camera;
 using namespace std::chrono;
-
-// auto exposure paramteres
-const float MAX_EXPOSURE = 1000000.0; // maximum allowed exposure
-const float MAX_ENTROPY = 400.923; // maximum entropy achieved by a image with 3 channels
-const size_t STEPS = 20;
-const float MIN_EXPOSURE = 10000.0;
-const float LEARNING_RATE = 20000;
-
-float set_exposure(VmbCPP::CameraPtr cam, VimbaProvider* p){
-    float currentExposure = MIN_EXPOSURE, lastEntropy = -1, lastExposure = -1, slope = 1;
-    size_t steps = 0;
-
-    while(currentExposure < MAX_EXPOSURE && steps < STEPS){
-        VmbCPP::FramePtrVector frames = p->AqcuireFrame(cam, currentExposure, 0, 1);            
-        VmbCPP::FramePtr frame = frames.at(0);
-        unsigned int size, width, height;
-        frame->GetBufferSize(size);
-        frame->GetHeight(height);
-        frame->GetWidth(width);
-        
-        unsigned char* buffer;
-        frame->GetImage(buffer);
-
-        cv::Mat img(height, width, CV_8UC3, buffer);
-        cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
-        float currentEntropy = ExposureHelper::calculateEntropy(img);
-
-        if(lastEntropy == -1){
-            lastEntropy = currentEntropy;
-            lastExposure = currentExposure;
-
-            currentExposure += LEARNING_RATE;
-        } else {
-            float exposure_delta = currentExposure - lastExposure;
-            float entropy_delta = currentEntropy - lastEntropy;
-            slope = (entropy_delta/MAX_ENTROPY)/(exposure_delta/MAX_EXPOSURE); // normalized slope
-
-            lastEntropy = currentEntropy;
-            lastExposure = currentExposure;
-
-            currentExposure += LEARNING_RATE*slope;
-            std::cout << slope << " " << currentExposure << std::endl;
-        }
-
-        steps++;
-    }
-
-    return currentExposure;
-}
 
 std::string_view get_option(
     const std::vector<std::string_view>& args, 
@@ -117,67 +68,38 @@ Optional Arguments:
     std::cout << help << std::endl;
 }
 
-int main(int argc, char *argv[], char *envp[]){
-    // parse arguments
-    const std::vector<std::string_view> args(argv, argv + argc);
-    const std::string_view exposure_arg = get_option(args, "-e");
-    const std::string_view camera = get_option(args, "-c");
-    const std::string_view num_images_arg = get_option(args, "-n");
-
-    VimbaProvider* vmbProvider = new VimbaProvider();
-    MessageQueue* mq = new MessageQueue();
-    std::vector<VmbCPP::CameraPtr> cameras = vmbProvider->GetCameras();
+void capture(CaptureMessage params, VimbaProvider* vmbProvider, MessageQueue* mq, std::vector<VmbCPP::CameraPtr> cameras){
     VmbCPP::CameraPtr cam;
-
-    // parsed arguments
-    float exposure = 0;
-    int num_images = 1;
-
-    if(has_option(args, "-h")){
-        print_usage();
-        return 0;
-    }
-
-    if(exposure_arg.size() > 0){
-        exposure = (exposure_arg == "auto")? 0 : std::atof(std::string(exposure_arg).c_str());
-    } else {
-        print_usage();
-        return 1;
-    }
-
-    if(num_images_arg.size() > 0){
-        num_images = std::atoi(std::string(num_images_arg).c_str());
-    }
-
+    
     if(cameras.size() > 0){
         for(int i = 0; i < cameras.size(); i++){
             std::string camName = "";
             cameras.at(i)->GetModel(camName);
 
-            if(camName == camera){
+            if(camName == params.Camera){
                 cam = cameras.at(i);
             }
         }
     } else {
         std::cerr << "No cameras were detected" << std::endl;
-        return 1;
+        return;
     }
 
     std::cout << "Size of pointer: " << sizeof(int*) << " bytes" << std::endl;
 
-    if(cam != NULL && num_images > 0){
+    if(cam != NULL && params.NumberOfImages > 0){
         cam->Open(VmbAccessModeExclusive);
-        exposure = (exposure == 0)?set_exposure(cam, vmbProvider):exposure;
-        VmbCPP::FramePtrVector frames = vmbProvider->AqcuireFrame(cameras.at(0), exposure, 0, num_images);
+        float exposure = (params.Exposure == 0)?set_exposure(cam, vmbProvider):params.Exposure;
+        VmbCPP::FramePtrVector frames = vmbProvider->AqcuireFrame(cameras.at(0), exposure, 0, params.NumberOfImages);
         
         unsigned int width, height, bufferSize;
         frames.at(0)->GetBufferSize(bufferSize);
         frames.at(0)->GetWidth(width);
         frames.at(0)->GetHeight(height);
 
-        unsigned char* total_buffer = new unsigned char[bufferSize*num_images];
+        unsigned char* total_buffer = new unsigned char[bufferSize*params.NumberOfImages];
 
-        for(int i = 0; i < num_images; i++){
+        for(int i = 0; i < params.NumberOfImages; i++){
             unsigned char* buffer;
             frames.at(i)->GetImage(buffer);
             std::memcpy((void*)(&total_buffer[i * bufferSize]), buffer, bufferSize * sizeof(unsigned char));
@@ -187,8 +109,8 @@ int main(int argc, char *argv[], char *envp[]){
         batch.height = height;
         batch.width = width;
         batch.channels = 3;
-        batch.num_images = num_images;
-        batch.data_size = bufferSize*num_images;
+        batch.num_images = params.NumberOfImages;
+        batch.data_size = bufferSize*params.NumberOfImages;
         batch.data = total_buffer;
 
         if(mq->SendImage(batch)){
@@ -200,7 +122,7 @@ int main(int argc, char *argv[], char *envp[]){
         delete[] total_buffer;
         cam->Close();
     } else {
-        if(num_images <= 0){
+        if(params.NumberOfImages <= 0){
             std::cerr << "Number of images must be greater than zero" << std::endl;
         }
 
@@ -216,6 +138,20 @@ int main(int argc, char *argv[], char *envp[]){
             std::cerr << std::endl;
         }
     }
+}
+
+int main(int argc, char *argv[], char *envp[]){
+    // parse arguments
+    const std::vector<std::string_view> args(argv, argv + argc);
+    const std::string_view exposure_arg = get_option(args, "-e");
+    const std::string_view camera = get_option(args, "-c");
+    const std::string_view num_images_arg = get_option(args, "-n");
+
+    VimbaProvider* vmbProvider = new VimbaProvider();
+    MessageQueue* mq = new MessageQueue();
+    std::vector<VmbCPP::CameraPtr> cameras = vmbProvider->GetCameras();
+
+    server_init(capture, vmbProvider, mq, cameras);
 
     delete vmbProvider; 
     delete mq;

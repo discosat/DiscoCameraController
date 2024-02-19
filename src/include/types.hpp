@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <iostream>
 
 typedef struct ImageBatch {
     unsigned int height;
@@ -24,5 +25,11 @@ typedef struct ImageBatchMessage {
     int shm_key;
 } ImageBatchMessage;
 
+typedef struct CaptureMessage {
+    int NumberOfImages;
+    int Exposure;
+    int ISO;
+    std::string Camera;
+} CaptureMessage;
 
 #endif
