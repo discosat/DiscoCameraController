@@ -1,6 +1,6 @@
 .PHONY: all clean debug release setup
 
-all: debug
+all: release
 
 current_dir := $(dir $(abspath $(firstword $(MAKEFILE_LIST))))
 

@@ -2,15 +2,15 @@
 #include <vector>
 #include <VmbCPP/VmbCPP.h>
 #include <opencv2/opencv.hpp>
-#include "vimba_provider.hpp"
-#include "exposure_helper.hpp"
-#include "types.hpp"
+#include "camera_control/camera_controller.hpp"
+#include "utils/exposure_helper.hpp"
+#include "utils/common.hpp"
 #include <filesystem>
 #include <ctime>
 #include <bits/stdc++.h>
 #include <chrono>
-#include "message_queue.hpp"
-#include "csp_server.hpp"
+#include "communication/message_queue.hpp"
+#include "communication/csp_server.hpp"
 
 namespace fs = std::filesystem;
 
@@ -68,7 +68,7 @@ Optional Arguments:
     std::cout << help << std::endl;
 }
 
-void capture(CaptureMessage params, VimbaProvider* vmbProvider, MessageQueue* mq, std::vector<VmbCPP::CameraPtr> cameras){
+void capture(CaptureMessage params, CameraController* vmbProvider, MessageQueue* mq, std::vector<VmbCPP::CameraPtr> cameras){
     VmbCPP::CameraPtr cam;
     
     if(cameras.size() > 0){
@@ -108,7 +108,7 @@ void capture(CaptureMessage params, VimbaProvider* vmbProvider, MessageQueue* mq
         ImageBatch batch;
         batch.height = height;
         batch.width = width;
-        batch.channels = 3;
+        batch.channels = 1;
         batch.num_images = params.NumberOfImages;
         batch.data_size = bufferSize*params.NumberOfImages;
         batch.data = total_buffer;
@@ -147,7 +147,7 @@ int main(int argc, char *argv[], char *envp[]){
     const std::string_view camera = get_option(args, "-c");
     const std::string_view num_images_arg = get_option(args, "-n");
 
-    VimbaProvider* vmbProvider = new VimbaProvider();
+    CameraController* vmbProvider = new CameraController();
     MessageQueue* mq = new MessageQueue();
     std::vector<VmbCPP::CameraPtr> cameras = vmbProvider->GetCameras();
 

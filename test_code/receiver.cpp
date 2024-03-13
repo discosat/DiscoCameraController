@@ -60,6 +60,7 @@ void readMem(ImageBatchMessage msg){
 
     // Detach from the shared memory segment !VERY IMPORTANT!
     shmctl(shmid, IPC_RMID, nullptr);
+    std::string time = std::to_string(std::time(0));
 
     // Read from shared memory
     for(int i = 0; i < msg.num_images; i++){
@@ -67,7 +68,7 @@ void readMem(ImageBatchMessage msg){
         unsigned char* image_data = new unsigned char[localDataSize];
         memcpy(image_data, (void*)(&local_data[i * localDataSize]), localDataSize);
 
-        cv::Mat img(msg.height, msg.width, CV_8UC3, image_data);
+        cv::Mat img(msg.height, msg.width, CV_16UC3, image_data);
         cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
 
         // save to path
@@ -75,6 +76,28 @@ void readMem(ImageBatchMessage msg){
         fs::path file ("image_" + std::to_string(std::time(0)) + "_" + std::to_string(i) + ".png");
         std::string full_path = (dir / file).string();
         imwrite(full_path, img);
+        delete[] image_data;
+
+        // fs::path dir ("./");
+        // fs::path file ("image_" + time + "_" + std::to_string(i) + "_8bit.raw");
+        // std::string full_path = (dir / file).string();
+
+        // // Open a file for binary writing
+        // std::ofstream outFile(full_path, std::ios::out | std::ios::binary);
+
+        // // Check if the file opened successfully
+        // if (!outFile) {
+        //     std::cerr << "Error opening file for writing!" << std::endl;
+        //     return;
+        // }
+
+        // // Write the raw data to the file
+        // outFile.write(reinterpret_cast<char*>(image_data), localDataSize);
+
+        // // Close the file
+        // outFile.close();
+
+        std::cout << "Binary data saved to file successfully." << std::endl;
         delete[] image_data;
     }
 }

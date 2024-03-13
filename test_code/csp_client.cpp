@@ -67,7 +67,7 @@ void client(void) {
 		}
 
 		/* 3. Copy data to packet */
-        memcpy(packet->data, "CAMERA=1800 U-500c;NUM_IMAGES=1;EXPOSURE=55000;ISO=0;", 54);
+        memcpy(packet->data, "CAMERA=1800 U-500c;NUM_IMAGES=10;EXPOSURE=55000;ISO=0;", 54);
         count++;
 
 		/* 4. Set packet length */
@@ -78,6 +78,7 @@ void client(void) {
 
 		/* 6. Close connection */
 		csp_close(conn);
+        return;
 	}
 
 	return;
