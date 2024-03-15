@@ -54,3 +54,4 @@ _deps
 
 build/*
 !/Makefile
+!lib/VimbaX_2023-*/api/lib/*.so
