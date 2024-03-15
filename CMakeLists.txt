@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.0)
 
 project(Disco2CameraControl VERSION 1.0 LANGUAGES CXX)
 
-set(Vmb_DIR ${CMAKE_SOURCE_DIR}/lib/VimbaX_2023-1/api/lib/cmake/vmb)
-
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
     message("Target architecture is aarch64.")
     set(CMAKE_LIBRARY_ARCHITECTURE aarch64-linux-gnu)
@@ -22,6 +20,9 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
     set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
     set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
     set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+    set(Vmb_DIR ${CMAKE_SOURCE_DIR}/lib/VimbaX_2023-4-ARM64/api/lib/cmake/vmb)
+else()
+    set(Vmb_DIR ${CMAKE_SOURCE_DIR}/lib/VimbaX_2023-4-Linux/api/lib/cmake/vmb)
 endif()
 
 find_package(Vmb REQUIRED COMPONENTS CPP)
