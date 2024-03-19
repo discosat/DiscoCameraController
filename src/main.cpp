@@ -52,18 +52,21 @@ std::vector<std::string> split_string(std::string input){
 }
 
 void print_usage(){
-    std::string help = R"""(Usage: Disco2CameraControl -e EXPOSURE [-s] [-n NUM_IMAGES] [-f FEATURES]
+    std::string help = R"""(Usage: Disco2CameraControl -i INTERFACE -p DEVICE -a NODE
 
 Description:
-  Perform image processing with the following options:
+  Listen to a capture message with the following options:
 
-Required Argument:
-  -e EXPOSURE   Set the exposure level (a positive number) or auto.
-  -c CAMERA      Specify the camera to be used in the current burst.
-
-Optional Arguments:
-  -n NUM_IMAGES  Specify the number of images to save (only valid with -s), default is 1.
-    )""";
+Arguments:
+  -i INTERFACE   The connection interface to utilize, can be one of: zmq, can, kiss.
+                 Default: zmq
+  -d DEVICE      Device connection interface.
+                 Default: localhost
+  -p PORT        Port that the server listens to for command packets.
+                 Default: 10
+  -n NODE        CSP node address.
+                 Default: 2
+)""";
 
     std::cout << help << std::endl;
 }
@@ -92,8 +95,12 @@ void capture(CaptureMessage params, CameraController* vmbProvider, MessageQueue*
         float exposure = (params.Exposure == 0)?set_exposure(cam, vmbProvider):params.Exposure;
         VmbCPP::FramePtrVector frames = vmbProvider->AqcuireFrame(cameras.at(0), exposure, 0, params.NumberOfImages);
         
-        unsigned int width, height, bufferSize;
+        unsigned int width, height, bufferSize, imageSize;
         frames.at(0)->GetBufferSize(bufferSize);
+
+        imageSize = bufferSize;
+        bufferSize+=IMAGE_METADATA_SIZE;
+
         frames.at(0)->GetWidth(width);
         frames.at(0)->GetHeight(height);
 
@@ -101,8 +108,12 @@ void capture(CaptureMessage params, CameraController* vmbProvider, MessageQueue*
 
         for(int i = 0; i < params.NumberOfImages; i++){
             unsigned char* buffer;
+            unsigned int offset = i*bufferSize;
             frames.at(i)->GetImage(buffer);
-            std::memcpy((void*)(&total_buffer[i * bufferSize]), buffer, bufferSize * sizeof(unsigned char));
+
+            // copy the image 
+            std::memcpy((void*)(&total_buffer[offset]), &imageSize, sizeof(unsigned int));
+            std::memcpy((void*)(&total_buffer[offset+IMAGE_METADATA_SIZE]), buffer, imageSize * sizeof(unsigned char));
         }
 
         ImageBatch batch;
@@ -110,7 +121,7 @@ void capture(CaptureMessage params, CameraController* vmbProvider, MessageQueue*
         batch.width = width;
         batch.channels = 1;
         batch.num_images = params.NumberOfImages;
-        batch.data_size = bufferSize*params.NumberOfImages;
+        batch.batch_size = bufferSize*params.NumberOfImages;
         batch.data = total_buffer;
 
         if(mq->SendImage(batch)){
@@ -143,15 +154,46 @@ void capture(CaptureMessage params, CameraController* vmbProvider, MessageQueue*
 int main(int argc, char *argv[], char *envp[]){
     // parse arguments
     const std::vector<std::string_view> args(argv, argv + argc);
-    const std::string_view exposure_arg = get_option(args, "-e");
-    const std::string_view camera = get_option(args, "-c");
-    const std::string_view num_images_arg = get_option(args, "-n");
+    
+    if(has_option(args, "-h")){
+        print_usage();
+        return 0;
+    }
+    
+    const std::string_view interface_arg = get_option(args, "-i");
+    const std::string_view device_arg = get_option(args, "-d");
+    const std::string_view node_arg = get_option(args, "-n");
+    const std::string_view port_arg = get_option(args, "-p");
+    int node = 2, port = 10;
+    std::string device = "localhost", interface = "zmq";
+
+    if(node_arg.size() > 0){
+        node = std::atoi(std::string(node_arg).c_str());
+    }
+
+    if(port_arg.size() > 0){
+        port = std::atoi(std::string(port_arg).c_str());
+    }
+
+    if(device_arg.size() > 0){
+        device = std::string(device_arg);
+    }
+
+    if(interface_arg.size() > 0){
+        interface = std::string(interface_arg);
+    }
+
+    CSPInterface interfaceConfig;
+    interfaceConfig.Interface = StringToCSPInterface(interface);
+    interfaceConfig.Device = std::string(device_arg);
+    interfaceConfig.Node = node;
+    interfaceConfig.Port = port;
 
     CameraController* vmbProvider = new CameraController();
     MessageQueue* mq = new MessageQueue();
     std::vector<VmbCPP::CameraPtr> cameras = vmbProvider->GetCameras();
 
-    server_init(capture, vmbProvider, mq, cameras);
+    server_init(capture, vmbProvider, mq, cameras, interfaceConfig);
 
     delete vmbProvider; 
     delete mq;

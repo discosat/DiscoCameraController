@@ -64,11 +64,11 @@ bool MessageQueue::SendImage(ImageBatch batch){
     int memspace;
     void* addr;
 
-    if((memspace = createMemorySpace(batch.data_size)) < 0){
+    if((memspace = createMemorySpace(batch.batch_size)) < 0){
         return false;
     }
 
-    addr = insertMemory(batch.data, batch.data_size, memspace);
+    addr = insertMemory(batch.data, batch.batch_size, memspace);
 
     ImageBatchMessage msg;
     msg.mtype = 1;
@@ -77,7 +77,7 @@ bool MessageQueue::SendImage(ImageBatch batch){
     msg.channels = batch.channels;
     msg.num_images = batch.num_images;
     msg.shm_key = memspace;
-    msg.data_size = batch.data_size;
+    msg.batch_size = batch.batch_size;
 
     if(addr != NULL && sendMessage(msg) && (shmdt(addr)) != -1){
         return true;

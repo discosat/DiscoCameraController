@@ -10,6 +10,6 @@
 void server(void);
 
 void server_init(std::function<void(CaptureMessage params, CameraController*, MessageQueue*, std::vector<VmbCPP::CameraPtr>)> callback,
-				CameraController* vmbProvider, MessageQueue* mq, std::vector<VmbCPP::CameraPtr> cameras);
+				CameraController* vmbProvider, MessageQueue* mq, std::vector<VmbCPP::CameraPtr> cameras, CSPInterface interfaceConfig);
 
 #endif
