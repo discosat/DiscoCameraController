@@ -27,19 +27,20 @@ else()
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_THREAD_LIBS_INIT "-lpthread")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+set(CMAKE_HAVE_THREADS_LIBRARY 1)
+set(CMAKE_USE_WIN32_THREADS_INIT 0)
+set(CMAKE_USE_PTHREADS_INIT 1)
+set(THREADS_PREFER_PTHREAD_FLAG ON)
 
-#find_package(Threads REQUIRED)
 find_package(Vmb REQUIRED COMPONENTS CPP)
-#find_package(OpenCV REQUIRED)
-#add_subdirectory(${CMAKE_SOURCE_DIR}/lib/libcsp)
 
 add_subdirectory(src/camera_control)
 add_subdirectory(src/communication)
 add_subdirectory(src/utils)
 
 add_executable(Disco2CameraControl src/main.cpp)
-
-target_compile_options(Disco2CameraControl PUBLIC "-pthread")
 
 #target_link_libraries(Disco2CameraControl PRIVATE Vmb::CPP ${OpenCV_LIBS} libcamera_control libcommunication libutils csp)
 target_link_libraries(Disco2CameraControl PRIVATE Vmb::CPP libcamera_control libcommunication libutils csp ${CMAKE_THREAD_LIBS_INIT})
