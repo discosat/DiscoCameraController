@@ -38,13 +38,8 @@ add_subdirectory(src/utils)
 
 add_executable(Disco2CameraControl src/main.cpp)
 
-if(THREADS_HAVE_PTHREAD_ARG)
-  target_compile_options(Disco2CameraControl PUBLIC "-pthread")
-endif()
-if(CMAKE_THREAD_LIBS_INIT)
-  target_link_libraries(Disco2CameraControl "${CMAKE_THREAD_LIBS_INIT}")
-endif()
+target_compile_options(Disco2CameraControl PUBLIC "-pthread")
 
 #target_link_libraries(Disco2CameraControl PRIVATE Vmb::CPP ${OpenCV_LIBS} libcamera_control libcommunication libutils csp)
-target_link_libraries(Disco2CameraControl PRIVATE Vmb::CPP libcamera_control libcommunication libutils csp)
+target_link_libraries(Disco2CameraControl PRIVATE Vmb::CPP libcamera_control libcommunication libutils csp ${CMAKE_THREAD_LIBS_INIT})
 target_include_directories(Disco2CameraControl PRIVATE ${CMAKE_SOURCE_DIR}/src/camera_control ${CMAKE_SOURCE_DIR}/src/communication ${CMAKE_SOURCE_DIR}/src/utils)
