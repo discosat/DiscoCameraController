@@ -1,4 +1,4 @@
-find_package(OpenCV REQUIRED)
+#find_package(OpenCV REQUIRED)
 
 set(SOURCES
 #    exposure_helper.cpp
@@ -15,4 +15,5 @@ add_library(libutils ${SOURCES} ${HEADERS})
 
 target_include_directories(libutils PRIVATE ${CMAKE_SOURCE_DIR}/src/camera_control)
 
-target_link_libraries(libutils PRIVATE ${OpenCV_LIBS} Vmb::CPP)
+#target_link_libraries(libutils PRIVATE ${OpenCV_LIBS} Vmb::CPP)
+target_link_libraries(libutils PRIVATE Vmb::CPP)
