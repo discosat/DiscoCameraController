@@ -67,7 +67,7 @@ void client(void) {
 		}
 
 		/* 3. Copy data to packet */
-        memcpy(packet->data, "CAMERA=1800 U-500c;NUM_IMAGES=10;EXPOSURE=55000;ISO=0;", 54);
+        memcpy(packet->data, "CAMERA=1800 U-500c;NUM_IMAGES=2;EXPOSURE=65000;ISO=1;", 55);
         count++;
 
 		/* 4. Set packet length */

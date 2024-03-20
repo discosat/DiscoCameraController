@@ -16,13 +16,15 @@ namespace fs = std::filesystem;
 using namespace std;
 
 typedef struct ImageBatch {
-    unsigned int height;
-    unsigned int width;
-    unsigned int channels;
-    unsigned int num_images;
-    unsigned int data_size;
-    int shm_key;
-    unsigned char *data;
+    long mtype;          /* message type to read from the message queue */
+    int height;          /* height of images */
+    int width;           /* width of images */
+    int channels;        /* channels of images */
+    int num_images;      /* amount of images */
+    int batch_size;      /* size of the image batch */
+    int shm_key;         /* key to shared memory segment of image data */
+    int pipeline_id;     /* id of pipeline to utilize for processing */
+    unsigned char *data; /* address to image data (in shared memory) */
 } ImageBatch;
 
 typedef struct ImageBatchMessage {
@@ -31,7 +33,7 @@ typedef struct ImageBatchMessage {
     unsigned int width;
     unsigned int channels;
     unsigned int num_images;
-    unsigned int data_size;
+    unsigned int batch_size;
     int shm_key;
 } ImageBatchMessage;
 
@@ -47,11 +49,11 @@ void readMem(ImageBatchMessage msg){
     }
 
     // create a local copy of the data
-    uint localDataSize = msg.data_size/msg.num_images;
-    unsigned char* local_data = new unsigned char[msg.data_size];
+    uint localDataSize = msg.batch_size/msg.num_images;
+    unsigned char* local_data = new unsigned char[msg.batch_size];
 
     // copy the shared data to the local copy
-    memcpy(local_data, ((unsigned char*)shared_memory), msg.data_size);
+    memcpy(local_data, ((unsigned char*)shared_memory), msg.batch_size);
 
     // Detach from the shared memory segment !VERY IMPORTANT!
     if (shmdt(shared_memory) == -1) {
@@ -65,17 +67,27 @@ void readMem(ImageBatchMessage msg){
     // Read from shared memory
     for(int i = 0; i < msg.num_images; i++){
         // get the data for image i into image buffer
-        unsigned char* image_data = new unsigned char[localDataSize];
-        memcpy(image_data, (void*)(&local_data[i * localDataSize]), localDataSize);
+        size_t header_size = 4;
+        size_t image_size = localDataSize-header_size;
+        unsigned char* image_data = new unsigned char[image_size];
+        unsigned int image_header = *((unsigned int*)&local_data[(i * localDataSize)]);
+        memcpy(image_data, (void*)(&local_data[(i * localDataSize)+header_size]), image_size);
 
-        cv::Mat img(msg.height, msg.width, CV_16UC3, image_data);
-        cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
+        std::cout << "Image recieved with header: " << image_header << std::endl;
+        std::cout << "Image height: " << msg.height << std::endl;
+        std::cout << "Image width: " << msg.width << std::endl;
+        std::cout << "Image size: " << image_size << std::endl;
+
+        cv::Mat rawImage(msg.height, msg.width, CV_16UC1, image_data);
+        rawImage *= 16; // scale image to use 16 bits
+        cv::Mat demosaicedImage;
+        cv::cvtColor(rawImage, demosaicedImage, cv::COLOR_BayerGR2BGR);
 
         // save to path
         fs::path dir ("./");
         fs::path file ("image_" + std::to_string(std::time(0)) + "_" + std::to_string(i) + ".png");
         std::string full_path = (dir / file).string();
-        imwrite(full_path, img);
+        imwrite(full_path, demosaicedImage);
         delete[] image_data;
 
         // fs::path dir ("./");
@@ -97,9 +109,11 @@ void readMem(ImageBatchMessage msg){
         // // Close the file
         // outFile.close();
 
-        std::cout << "Binary data saved to file successfully." << std::endl;
-        delete[] image_data;
+        // std::cout << "Binary data saved to file successfully." << std::endl;
+        // delete[] image_data;
     }
+
+    delete[] local_data;
 }
 
 int main() {
@@ -118,7 +132,7 @@ int main() {
             continue;
         }
 
-        cout << "Receiver: Message received: " << message.data_size << " " << message.shm_key << endl;
+        cout << "Receiver: Message received: " << message.batch_size << " " << message.shm_key << endl;
         readMem(message);
     }
 

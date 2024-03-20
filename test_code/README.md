@@ -6,3 +6,5 @@ g++ -std=c++11 -I../lib/libcsp/include csp_client_posix.cpp csp_client.cpp -o cl
 
 gcc -c zmqproxy.c -o proxy.o \
  gcc proxy.o -o proxy -lcsp -lzmq
+
+ ./client -z localhost -C 2 -a 10
