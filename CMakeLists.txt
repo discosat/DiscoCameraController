@@ -27,7 +27,8 @@ endif()
 
 find_package(Vmb REQUIRED COMPONENTS CPP)
 #find_package(OpenCV REQUIRED)
-find_library(csp PATHS /usr/local/include/csp /usr/local/lib/)
+#find_library(csp PATHS /usr/local/include/csp /usr/local/lib/)
+add_subdirectory(${CMAKE_SOURCE_DIR}/lib/libcsp)
 
 add_subdirectory(src/camera_control)
 add_subdirectory(src/communication)
