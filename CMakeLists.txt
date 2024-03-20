@@ -16,10 +16,11 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
     SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
     SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
 
+    # for libraries and headers in the target directories
     set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
     set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
     set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-    set(Vmb_DIR ${CMAKE_SOURCE_DIR}/lib/VimbaX_2023-1-ARM64-Linux/api/lib/cmake/vmb)
+    set(Vmb_DIR ${CMAKE_SOURCE_DIR}/lib/VimbaX_2023-4-ARM64/api/lib/cmake/vmb)
 else()
     set(Vmb_DIR ${CMAKE_SOURCE_DIR}/lib/VimbaX_2023-4-Linux/api/lib/cmake/vmb)
 endif()
