@@ -16,6 +16,17 @@
 #include "camera_controller.hpp"
 #include <memory>
 
+#include <stdio.h>
+#include <csp/csp.h>
+#include <csp/csp_iflist.h>
+#include <csp/csp_rtable.h>
+#include <csp/interfaces/csp_if_zmqhub.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <csp/drivers/usart.h>
+
 
 /* These three functions must be provided in arch specific way */
 int router_start(void);
