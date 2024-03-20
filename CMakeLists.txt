@@ -28,7 +28,7 @@ endif()
 
 set(CMAKE_CXX_STANDARD 20)
 
-find_package(Threads REQUIRED)
+#find_package(Threads REQUIRED)
 find_package(Vmb REQUIRED COMPONENTS CPP)
 #find_package(OpenCV REQUIRED)
 #add_subdirectory(${CMAKE_SOURCE_DIR}/lib/libcsp)
