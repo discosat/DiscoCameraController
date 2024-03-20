@@ -39,6 +39,7 @@ find_package(Vmb REQUIRED COMPONENTS CPP)
 add_subdirectory(src/camera_control)
 add_subdirectory(src/communication)
 add_subdirectory(src/utils)
+add_subdirectory(${CMAKE_SOURCE_DIR}/lib/libcsp)
 
 add_executable(Disco2CameraControl src/main.cpp)
 
