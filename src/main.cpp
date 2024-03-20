@@ -1,9 +1,8 @@
 #include <iostream>
 #include <vector>
 #include <VmbCPP/VmbCPP.h>
-#include <opencv2/opencv.hpp>
 #include "camera_control/camera_controller.hpp"
-#include "utils/exposure_helper.hpp"
+//#include "utils/exposure_helper.hpp"
 #include "utils/common.hpp"
 #include <filesystem>
 #include <ctime>
@@ -92,7 +91,7 @@ void capture(CaptureMessage params, CameraController* vmbProvider, MessageQueue*
 
     if(cam != NULL && params.NumberOfImages > 0){
         cam->Open(VmbAccessModeExclusive);
-        float exposure = (params.Exposure == 0)?set_exposure(cam, vmbProvider):params.Exposure;
+        float exposure = (params.Exposure == 0)?55000:params.Exposure;//set_exposure(cam, vmbProvider):params.Exposure;
         VmbCPP::FramePtrVector frames = vmbProvider->AqcuireFrame(cameras.at(0), exposure, 0, params.NumberOfImages);
         
         unsigned int width, height, bufferSize, imageSize;

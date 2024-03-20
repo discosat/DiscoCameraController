@@ -1,12 +1,12 @@
 find_package(OpenCV REQUIRED)
 
 set(SOURCES
-    exposure_helper.cpp
+#    exposure_helper.cpp
     csp_parser.cpp
 )
 
 set(HEADERS
-    exposure_helper.hpp
+#    exposure_helper.hpp
     csp_parser.hpp
     common.hpp
 )
