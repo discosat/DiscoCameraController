@@ -16,17 +16,6 @@
 #include "camera_controller.hpp"
 #include <memory>
 
-#include <stdio.h>
-#include <csp/csp.h>
-#include <csp/csp_iflist.h>
-#include <csp/csp_rtable.h>
-#include <csp/interfaces/csp_if_zmqhub.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <csp/drivers/usart.h>
-
 
 /* These three functions must be provided in arch specific way */
 int router_start(void);
@@ -85,6 +74,9 @@ void server_init(std::function<void(CaptureMessage params, CameraController*, Me
     router_start();
     csp_iface_t * default_iface = NULL;
 
+    csp_conf.hostname = "Dummy Node";
+    csp_conf.model = "DISCO-II";
+
     csp_print("Connection table\r\n");
     csp_conn_print_table();
 
@@ -132,6 +124,7 @@ void server_init(std::function<void(CaptureMessage params, CameraController*, Me
         if(shared_packet.get() != nullptr){
             CaptureMessage msg;
             std::string input(shared_packet.get());
+
             parseMessage(input, msg);
             shared_packet.reset();
 
