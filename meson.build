@@ -34,22 +34,37 @@ cpp = meson.get_compiler('cpp')
 
 csp_dep = dependency('csp', fallback: ['csp', 'csp_dep'])
 param_dep = dependency('param', fallback: ['param', 'param_dep'])
-vmb_dep = cpp.find_library('VmbCPP', dirs: join_paths(meson.source_root(),'lib/VimbaX_2023-4-Linux/api/lib'))
 m_dep = meson.get_compiler('c').find_library('m', required : false)
 
-deps = [csp_dep,param_dep,vmb_dep,m_dep]
+deps = [csp_dep,param_dep,m_dep]
 
-dirs = include_directories(
+dirs = []
+dirs += include_directories(
     'include/message_queue', 
     'include/utils', 
     'include/camera_control', 
     'include/communication',
-    'lib/VimbaX_2023-4-Linux/api/include'
 )
 
+if meson.is_cross_build()
+    if target_machine.cpu_family().contains('aarch64')
+        message('Compiling for aarch64')
+        vmb_dep = cpp.find_library('VmbCPP', dirs: join_paths(meson.source_root(),'lib/VimbaX_2023-4-ARM64/api/lib'))
+        deps += [vmb_dep]
+        dirs += include_directories('lib/VimbaX_2023-4-ARM64/api/include')
+    else
+        error('This project only supports cross-compilation for aarch64.')
+    endif
+else
+    message('Native build')
+    vmb_dep = cpp.find_library('VmbCPP', dirs: join_paths(meson.source_root(),'lib/VimbaX_2023-4-Linux/api/lib'))
+    deps += [vmb_dep]
+    dirs += include_directories('lib/VimbaX_2023-4-Linux/api/include')
+endif
+
 csp_app = executable('Disco2CameraControl', sources,
-        include_directories : dirs,
-        dependencies : deps,
-        install : true,
-        link_args : ['-Wl,--export-dynamic', '-ldl'],
+    include_directories : dirs,
+    dependencies : deps,
+    install : true,
+    link_args : ['-Wl,--export-dynamic', '-ldl'],
 )
