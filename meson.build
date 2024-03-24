@@ -47,14 +47,10 @@ dirs += include_directories(
 )
 
 if meson.is_cross_build()
-    if target_machine.cpu_family().contains('aarch64')
-        message('Compiling for aarch64')
-        vmb_dep = cpp.find_library('VmbCPP', dirs: join_paths(meson.source_root(),'lib/VimbaX_2023-4-ARM64/api/lib'))
-        deps += [vmb_dep]
-        dirs += include_directories('lib/VimbaX_2023-4-ARM64/api/include')
-    else
-        error('This project only supports cross-compilation for aarch64.')
-    endif
+    message('Compiling for aarch64')
+    vmb_dep = cpp.find_library('VmbCPP', dirs: join_paths(meson.source_root(),'lib/VimbaX_2023-4-ARM64/api/lib'))
+    deps += [vmb_dep]
+    dirs += include_directories('lib/VimbaX_2023-4-ARM64/api/include')
 else
     message('Native build')
     vmb_dep = cpp.find_library('VmbCPP', dirs: join_paths(meson.source_root(),'lib/VimbaX_2023-4-Linux/api/lib'))
