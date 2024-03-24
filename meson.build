@@ -34,9 +34,8 @@ cpp = meson.get_compiler('cpp')
 
 csp_dep = dependency('csp', fallback: ['csp', 'csp_dep'])
 param_dep = dependency('param', fallback: ['param', 'param_dep'])
-m_dep = meson.get_compiler('c').find_library('m', required : false)
 
-deps = [csp_dep,param_dep,m_dep]
+deps = [csp_dep,param_dep]
 
 dirs = []
 dirs += include_directories(
