@@ -2,8 +2,9 @@
 #define PARAM_CONFIG_H
 
 #include <param/param.h>
-extern param_t dummy_param;
+extern param_t capture_param;
 
-#define PARAMID_DUMMY_PARAM   1
+#define PARAMID_CAPTURE_PARAM   1
+#define PARAM_MAX_SIZE 126
 
 #endif /* PARAM_CONFIG_H */

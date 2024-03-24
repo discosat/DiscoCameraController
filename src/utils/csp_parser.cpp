@@ -5,7 +5,7 @@
 #include <vector>
 #include "common.hpp"
 
-void parseMessage(const std::string& input, CaptureMessage& message) {
+void ParseMessage(const std::string& input, CaptureMessage& message) {
     std::vector<std::string> pairs;
     std::stringstream ss(input);
     std::string pair;
@@ -32,7 +32,7 @@ void parseMessage(const std::string& input, CaptureMessage& message) {
         } else if (variable == "EXPOSURE") {
             message.Exposure = std::stoi(value);
         } else if (variable == "CAMERA") {
-            message.Camera = value;
+            message.Camera = value.c_str();
         } else {
             continue;
         }

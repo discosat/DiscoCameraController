@@ -1,6 +1,6 @@
-.PHONY: all clean debug release setup
+.PHONY: all clean build setup
 
-all: release
+all: build
 
 current_dir := $(dir $(abspath $(firstword $(MAKEFILE_LIST))))
 
@@ -10,14 +10,8 @@ clean:
 setup:
 	$(current_dir)lib/VimbaX_2023-1/VimbaUSBTL_Install.sh
 
-release:
+build:
 	mkdir -p ./build/release && \
 	cmake -S ./ -B ./build/release -DCMAKE_BUILD_TYPE=Release && \
 	cd ./build/release && \
-	make
-
-debug:
-	mkdir -p ./build/debug && \
-	cmake -S ./ -B ./build/debug -DCMAKE_BUILD_TYPE=Debug && \
-	cd ./build/debug && \
 	make

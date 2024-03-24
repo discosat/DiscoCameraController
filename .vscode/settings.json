@@ -85,7 +85,19 @@
         "scoped_allocator": "cpp",
         "syncstream": "cpp",
         "valarray": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "objstore.h": "c",
+        "vmem_server.h": "c",
+        "csp_server.h": "c",
+        "csp_time.h": "c",
+        "param_server.h": "c",
+        "csp.h": "c",
+        "param_config.h": "c",
+        "vmem_config.h": "c",
+        "hooks.h": "c",
+        "measure.h": "c",
+        "csp_if_zmqhub.h": "c",
+        "common.hpp": "c"
     },
     "cmake.configureOnOpen": true
 }

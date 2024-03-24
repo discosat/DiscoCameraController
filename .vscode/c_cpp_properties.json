@@ -4,16 +4,15 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/usr/include/opencv4",
-                "${workspaceFolder}/src/include",
-                "${workspaceFolder}/src/include/providers",
-                "${workspaceFolder}/src/include/helpers"
+                "${workspaceFolder}/src/**",
+                "${workspaceFolder}/include/**",
+                "${workspaceFolder}/lib/param/include"
             ],
             "defines": [],
             "cStandard": "c17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "linux-gcc-x64",
-            "compilerPath": "/usr/bin/gcc"
+            "compilerPath": "/usr/bin/g++-11"
         }
     ],
     "version": 4

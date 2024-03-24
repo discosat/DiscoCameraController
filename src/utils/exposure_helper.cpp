@@ -3,7 +3,7 @@
 #include <cmath>
 #include <VmbCPP/VmbCPP.h>
 #include "exposure_helper.hpp"
-#include "camera_controller.hpp"
+#include "vimba_controller.hpp"
 
 using namespace std;
 using namespace cv;
@@ -60,7 +60,7 @@ double calculateEntropy(Mat image) {
     return -total_r-total_g-total_b;
 }
 
-float set_exposure(VmbCPP::CameraPtr cam, CameraController* p){
+float set_exposure(VmbCPP::CameraPtr cam, VimbaController* p){
     float currentExposure = MIN_EXPOSURE, lastEntropy = -1, lastExposure = -1, slope = 1;
     size_t steps = 0;
 

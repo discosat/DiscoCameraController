@@ -3,7 +3,6 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#include <iostream>
 
 typedef struct ImageBatch {
     long mtype;          /* message type to read from the message queue */
@@ -28,37 +27,11 @@ typedef struct ImageBatchMessage {
 } ImageBatchMessage;
 
 typedef struct CaptureMessage {
-    int NumberOfImages;
+    size_t NumberOfImages;
     int Exposure;
     int ISO;
-    std::string Camera;
+    const char *Camera;
 } CaptureMessage;
-
-enum CSPInterfaceType {
-    ZMQ = 0,
-    CAN = 1,
-    KISS = 2
-};
-
-typedef struct CSPInterface {
-    CSPInterfaceType Interface;
-    std::string Device;
-    int Node;
-    int Port;
-} CSPInterface;
-
-inline CSPInterfaceType StringToCSPInterface(std::string name)
-{
-    if(name == "zmq"){
-        return CSPInterfaceType::ZMQ;
-    } else if(name == "can"){
-        return CSPInterfaceType::CAN;
-    } else if(name == "kiss"){
-        return CSPInterfaceType::KISS;
-    } else {
-        return CSPInterfaceType::ZMQ;
-    }
-}
 
 // how many bytes in the beginning of the image buffer is allocated for metadata, which is just the size of the image
 #define IMAGE_METADATA_SIZE 4

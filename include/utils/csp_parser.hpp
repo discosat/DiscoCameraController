@@ -5,6 +5,6 @@
 #ifndef CSPPARSER_H
 #define CSPPARSER_H
 
-void parseMessage(const std::string& input, CaptureMessage& message);
+void ParseMessage(const std::string& input, CaptureMessage& message);
 
 #endif

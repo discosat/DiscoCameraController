@@ -1,11 +1,11 @@
 #include <iostream>
 #include <stdexcept>
 #include <VmbCPP/VmbCPP.h>
-#include "camera_controller.hpp"
+#include "vimba_controller.hpp"
 
 using namespace VmbCPP;
 
-CameraController::CameraController() : sys(VmbSystem::GetInstance()){
+VimbaController::VimbaController() : sys(VmbSystem::GetInstance()){
     VmbErrorType err = this->sys.Startup();
 
     if (err != VmbErrorSuccess)
@@ -19,7 +19,7 @@ CameraController::CameraController() : sys(VmbSystem::GetInstance()){
     }
 }
 
-CameraController::~CameraController(){
+VimbaController::~VimbaController(){
     sys.Shutdown();
 
     // for(CameraPtr cam : cameras){
@@ -61,7 +61,7 @@ void GigEAdjustPacketSize(CameraPtr camera)
     }
 }
 
-double CameraController::GetFeature(std::string feature_name, VmbCPP::CameraPtr camera){
+double VimbaController::GetFeature(std::string feature_name, VmbCPP::CameraPtr camera){
     double feature_value;
     FeaturePtr feature;
     VmbErrorType err = camera->GetFeatureByName(feature_name.c_str(), feature);
@@ -78,7 +78,7 @@ double CameraController::GetFeature(std::string feature_name, VmbCPP::CameraPtr 
     return 0;
 }
 
-std::vector<CameraPtr> CameraController::GetCameras(){
+std::vector<CameraPtr> VimbaController::GetCameras(){
     CameraPtrVector cams;
     VmbErrorType err = sys.GetCameras(cams);
 
@@ -93,7 +93,7 @@ std::vector<CameraPtr> CameraController::GetCameras(){
     }
 }
 
-FramePtrVector CameraController::AqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain, int numFrames){
+FramePtrVector VimbaController::AqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain, int numFrames){
     FeaturePtr pFormatFeature;
 
     // Set pixel format. For the sake of simplicity we only support Mono and BGR in this example.

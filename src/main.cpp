@@ -1,15 +1,20 @@
 #include <iostream>
 #include <vector>
 #include <VmbCPP/VmbCPP.h>
-#include "camera_control/camera_controller.hpp"
+#include "vimba_controller.hpp"
 //#include "utils/exposure_helper.hpp"
-#include "utils/common.hpp"
+#include "common.hpp"
 #include <filesystem>
 #include <ctime>
 #include <bits/stdc++.h>
 #include <chrono>
-#include "communication/message_queue.hpp"
-#include "communication/csp_server.hpp"
+#include "message_queue.hpp"
+#include "utils.hpp"
+
+extern "C" {
+    #include "csp_server.h"
+#include <capture_controller.hpp>
+}
 
 namespace fs = std::filesystem;
 
@@ -70,84 +75,8 @@ Arguments:
     std::cout << help << std::endl;
 }
 
-void capture(CaptureMessage params, CameraController* vmbProvider, MessageQueue* mq, std::vector<VmbCPP::CameraPtr> cameras){
-    VmbCPP::CameraPtr cam;
+void capture(CaptureMessage params, VimbaController* vmbProvider, MessageQueue* mq, std::vector<VmbCPP::CameraPtr> cameras){
     
-    if(cameras.size() > 0){
-        for(int i = 0; i < cameras.size(); i++){
-            std::string camName = "";
-            cameras.at(i)->GetModel(camName);
-
-            if(camName == params.Camera){
-                cam = cameras.at(i);
-            }
-        }
-    } else {
-        std::cerr << "No cameras were detected" << std::endl;
-        return;
-    }
-
-    std::cout << "Size of pointer: " << sizeof(int*) << " bytes" << std::endl;
-
-    if(cam != NULL && params.NumberOfImages > 0){
-        cam->Open(VmbAccessModeExclusive);
-        float exposure = (params.Exposure == 0)?55000:params.Exposure;//set_exposure(cam, vmbProvider):params.Exposure;
-        VmbCPP::FramePtrVector frames = vmbProvider->AqcuireFrame(cameras.at(0), exposure, 0, params.NumberOfImages);
-        
-        unsigned int width, height, bufferSize, imageSize;
-        frames.at(0)->GetBufferSize(bufferSize);
-
-        imageSize = bufferSize;
-        bufferSize+=IMAGE_METADATA_SIZE;
-
-        frames.at(0)->GetWidth(width);
-        frames.at(0)->GetHeight(height);
-
-        unsigned char* total_buffer = new unsigned char[bufferSize*params.NumberOfImages];
-
-        for(int i = 0; i < params.NumberOfImages; i++){
-            unsigned char* buffer;
-            unsigned int offset = i*bufferSize;
-            frames.at(i)->GetImage(buffer);
-
-            // copy the image 
-            std::memcpy((void*)(&total_buffer[offset]), &imageSize, sizeof(unsigned int));
-            std::memcpy((void*)(&total_buffer[offset+IMAGE_METADATA_SIZE]), buffer, imageSize * sizeof(unsigned char));
-        }
-
-        ImageBatch batch;
-        batch.height = height;
-        batch.width = width;
-        batch.channels = 1;
-        batch.num_images = params.NumberOfImages;
-        batch.batch_size = bufferSize*params.NumberOfImages;
-        batch.data = total_buffer;
-
-        if(mq->SendImage(batch)){
-            std::cout << "Sending image was successful" << std::endl;
-        } else {
-            std::cout << "Sending image was unsuccessful" << std::endl;
-        }
-        
-        delete[] total_buffer;
-        cam->Close();
-    } else {
-        if(params.NumberOfImages <= 0){
-            std::cerr << "Number of images must be greater than zero" << std::endl;
-        }
-
-        if(cam == NULL){
-            std::cerr << "Camera must be one of: ";
-
-            for(int i = 0; i < cameras.size(); i++){
-                std::string camName;
-                cameras.at(i)->GetModel(camName);
-                std::cerr << camName << " ";
-            }
-
-            std::cerr << std::endl;
-        }
-    }
 }
 
 int main(int argc, char *argv[], char *envp[]){
@@ -183,18 +112,20 @@ int main(int argc, char *argv[], char *envp[]){
     }
 
     CSPInterface interfaceConfig;
-    interfaceConfig.Interface = StringToCSPInterface(interface);
-    interfaceConfig.Device = std::string(device_arg);
+    interfaceConfig.Interface = StringToCSPInterface(interface.c_str());
+    interfaceConfig.Device = device.c_str();
     interfaceConfig.Node = node;
     interfaceConfig.Port = port;
 
-    CameraController* vmbProvider = new CameraController();
-    MessageQueue* mq = new MessageQueue();
-    std::vector<VmbCPP::CameraPtr> cameras = vmbProvider->GetCameras();
+    // VimbaController* vmbProvider = new VimbaController();
+    // MessageQueue* mq = new MessageQueue();
+    // std::vector<VmbCPP::CameraPtr> cameras = vmbProvider->GetCameras();
 
-    server_init(capture, vmbProvider, mq, cameras, interfaceConfig);
+    CaptureController* captureController = new CaptureController();
+    server_start(&interfaceConfig, captureController->CaptureCallback, (void*)captureController);
 
-    delete vmbProvider; 
-    delete mq;
+    // delete vmbProvider; 
+    // delete mq;
+    delete captureController;
     return 0;
 }

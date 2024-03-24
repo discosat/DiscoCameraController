@@ -1,17 +1,17 @@
 #include <VmbCPP/VmbCPP.h>
 #include <vector>
 
-#ifndef CAMERACONTROLLER_H
-#define CAMERACONTROLLER_H
+#ifndef VIMBA_CONTROLLER_H
+#define VIMBA_CONTROLLER_H
 
-class CameraController{
+class VimbaController{
     private:
         VmbCPP::VmbSystem& sys;
         std::vector<VmbCPP::CameraPtr> cameras;
 
     public:
-        CameraController();
-        ~CameraController();
+        VimbaController();
+        ~VimbaController();
 
         std::vector<VmbCPP::CameraPtr> GetCameras();
 
