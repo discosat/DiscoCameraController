@@ -1,0 +1,8 @@
+[submodule "lib/csp"]
+	path = lib/csp
+	url = https://github.com/spaceinventor/libcsp
+	branch = 6d0c670ac1c31b43083ab157cd2ed66a2ae8df35
+[submodule "lib/param"]
+	path = lib/param
+	url = https://github.com/spaceinventor/libparam/
+	branch = 59d3eb12d562582e37140e470afb71ce9bb18f8f
