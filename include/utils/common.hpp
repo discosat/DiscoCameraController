@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <string>
 
 typedef struct ImageBatch {
     long mtype;          /* message type to read from the message queue */
@@ -29,8 +30,9 @@ typedef struct ImageBatchMessage {
 typedef struct CaptureMessage {
     size_t NumberOfImages;
     int Exposure;
-    int ISO;
-    const char *Camera;
+    int Interval;
+    float ISO;
+    std::string Camera;
 } CaptureMessage;
 
 // how many bytes in the beginning of the image buffer is allocated for metadata, which is just the size of the image

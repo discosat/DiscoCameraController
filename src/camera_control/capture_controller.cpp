@@ -51,7 +51,7 @@ ImageBatch CaptureController::CaptureVimba(CaptureMessage params, VmbCPP::Camera
 
 void CaptureController::Capture(CaptureMessage capture_instructions){
     std::cout << "New capture instructions:" << std::endl;
-    std::cout << "\tCamera: " << capture_instructions.Camera << std::endl;
+    std::cout << "\tCamera: \"" << capture_instructions.Camera << "\"" << std::endl;
     std::cout << "\tExposure: " << capture_instructions.Exposure << std::endl;
     std::cout << "\tISO: " << capture_instructions.ISO << std::endl;
     std::cout  << "\tNumber of images: " << capture_instructions.NumberOfImages << std::endl;
@@ -61,7 +61,7 @@ void CaptureController::Capture(CaptureMessage capture_instructions){
     
     if(cameras.size() > 0){
         for(size_t i = 0; i < cameras.size(); i++){
-            std::string camName = "";
+            std::string camName;
             cameras.at(i)->GetModel(camName);
 
             if(camName == capture_instructions.Camera){

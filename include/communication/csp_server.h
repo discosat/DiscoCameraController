@@ -5,7 +5,6 @@
 #include <string.h>  
 #include <pthread.h>
 #include <param/param.h>
-#include "common.hpp"
 #include "param_config.h"
 
 // callback for image capture

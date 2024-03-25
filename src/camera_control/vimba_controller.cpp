@@ -8,11 +8,6 @@ using namespace VmbCPP;
 VimbaController::VimbaController() : sys(VmbSystem::GetInstance()){
     VmbErrorType err = this->sys.Startup();
 
-    if (err != VmbErrorSuccess)
-    {
-        /* code */
-    }
-
     if (VmbErrorSuccess != err)
     {
         throw std::runtime_error("Could not start system. Error code: " + std::to_string(err) );

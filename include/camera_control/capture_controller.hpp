@@ -10,6 +10,12 @@
 #include "common.hpp"
 #include "message_queue.hpp"
 
+// capture parameters defaults
+#define EXPOSURE_DEFAULT 0
+#define ISO_DEFAULT 0
+#define NUM_IMAGES_DEFAULT 1
+#define INTERVAL_DEFAULT 0
+
 class CaptureController{
     public:
         CaptureController();
@@ -27,6 +33,12 @@ class CaptureController{
         }
 
         static void ParseMessage(const std::string& input, CaptureMessage& message) {
+            message.Exposure = EXPOSURE_DEFAULT;
+            message.ISO = ISO_DEFAULT;
+            message.Interval = INTERVAL_DEFAULT;
+            message.NumberOfImages = NUM_IMAGES_DEFAULT;
+            message.Camera = "";
+
             std::vector<std::string> pairs;
             std::stringstream ss(input);
             std::string pair;
@@ -50,10 +62,12 @@ class CaptureController{
                     message.NumberOfImages = std::stoi(value);
                 } else if (variable == "ISO") {
                     message.ISO = std::stof(value);
+                } else if (variable == "INTERVAL") {
+                    message.Interval = std::stoi(value);
                 } else if (variable == "EXPOSURE") {
                     message.Exposure = std::stoi(value);
                 } else if (variable == "CAMERA") {
-                    message.Camera = value.c_str();
+                    message.Camera = std::string(value.c_str());
                 } else {
                     continue;
                 }
