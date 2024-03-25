@@ -1,1 +1,13 @@
 build/*
+*.vmem
+test_code/
+
+!test_code/csp_client.cpp
+!test_code/csp_client_posix.cpp
+!test_code/csp_server.cpp
+!test_code/csp_server_posix.cpp
+!test_code/parser.cpp
+!test_code/receiver.cpp
+!test_code/sender.cpp
+!test_code/zmqproxy.c
+!test_code/README.md
