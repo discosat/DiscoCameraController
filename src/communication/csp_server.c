@@ -43,8 +43,7 @@ void* router_task(void* param) {
 }
 
 void capture_param_callback(struct param_s *param, int offset) {
-    char* data;
-    
+    char* data = malloc(PARAM_MAX_SIZE);
     param_get_string(param, data, PARAM_MAX_SIZE);
     pthread_mutex_lock(&mutex);
     
@@ -52,6 +51,7 @@ void capture_param_callback(struct param_s *param, int offset) {
     
     pthread_cond_signal(&cond);
     pthread_mutex_unlock(&mutex);
+    free(data);
 }
 
 static void csp_init_fun(void) {
@@ -134,6 +134,7 @@ void server_start(CSPInterface *interfaceConfig, CallbackFunc callback, void* ob
 
     // Initialize CSP
     csp_init_fun();
+    param_set_string(&capture_param, "", PARAM_MAX_SIZE);
 
     signal(SIGINT, intHandler);
     while (_RUNNING) {
