@@ -1,19 +1,17 @@
 #include <iostream>
 #include <vector>
 #include <VmbCPP/VmbCPP.h>
-#include "vimba_controller.hpp"
-//#include "utils/exposure_helper.hpp"
-#include "common.hpp"
 #include <filesystem>
 #include <ctime>
 #include <bits/stdc++.h>
 #include <chrono>
+
+#include "common.hpp"
 #include "message_queue.hpp"
-#include "utils.hpp"
+#include "capture_controller.hpp"
 
 extern "C" {
     #include "csp_server.h"
-#include <capture_controller.hpp>
 }
 
 namespace fs = std::filesystem;
@@ -73,10 +71,6 @@ Arguments:
 )""";
 
     std::cout << help << std::endl;
-}
-
-void capture(CaptureMessage params, VimbaController* vmbProvider, MessageQueue* mq, std::vector<VmbCPP::CameraPtr> cameras){
-    
 }
 
 int main(int argc, char *argv[], char *envp[]){

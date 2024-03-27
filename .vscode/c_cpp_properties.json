@@ -6,7 +6,8 @@
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/src/**",
                 "${workspaceFolder}/include/**",
-                "${workspaceFolder}/lib/param/include"
+                "${workspaceFolder}/lib/param/include",
+                "${workspaceFolder}/include/utils"
             ],
             "defines": [],
             "cStandard": "c17",

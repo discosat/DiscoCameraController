@@ -13,7 +13,7 @@ class MessageQueue{
     public:
         MessageQueue();
         ~MessageQueue();
-        bool SendImage(ImageBatch batch);
+        bool SendImage(ImageBatch batch, u_int16_t* error);
 };
 
 #endif

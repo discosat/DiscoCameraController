@@ -2,6 +2,8 @@
 #include <stdexcept>
 #include <VmbCPP/VmbCPP.h>
 #include "vimba_controller.hpp"
+#include "errors.hpp"
+#include <memory>
 
 using namespace VmbCPP;
 
@@ -16,61 +18,6 @@ VimbaController::VimbaController() : sys(VmbSystem::GetInstance()){
 
 VimbaController::~VimbaController(){
     sys.Shutdown();
-
-    // for(CameraPtr cam : cameras){
-    //     cam->Close();
-    // }
-}
-
-void GigEAdjustPacketSize(CameraPtr camera)
-{
-    StreamPtrVector streams;
-    VmbErrorType err = camera->GetStreams(streams);
-
-    if (err != VmbErrorSuccess || streams.empty())
-    {
-        throw std::runtime_error("Could not get stream modules, err=" + std::to_string(err));
-    }
-
-    FeaturePtr feature;
-    err = streams[0]->GetFeatureByName("GVSPAdjustPacketSize", feature);
-
-    if (err == VmbErrorSuccess)
-    {
-        err = feature->RunCommand();
-        if (err == VmbErrorSuccess)
-        {
-            bool commandDone = false;
-            do
-            {
-                if (feature->IsCommandDone(commandDone) != VmbErrorSuccess)
-                {
-                    break;
-                }
-            } while (commandDone == false);
-        }
-        else
-        {
-            std::cout << "Error while executing GVSPAdjustPacketSize, err=" + std::to_string(err) << std::endl;
-        }
-    }
-}
-
-double VimbaController::GetFeature(std::string feature_name, VmbCPP::CameraPtr camera){
-    double feature_value;
-    FeaturePtr feature;
-    VmbErrorType err = camera->GetFeatureByName(feature_name.c_str(), feature);
-
-    if (err == VmbErrorSuccess)
-    {
-        err = feature->GetValue(feature_value);
-        
-        return feature_value;
-    } else {
-        std::cout << err << std::endl;
-    }
-
-    return 0;
 }
 
 std::vector<CameraPtr> VimbaController::GetCameras(){
@@ -91,34 +38,26 @@ std::vector<CameraPtr> VimbaController::GetCameras(){
 FramePtrVector VimbaController::AqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain, int numFrames){
     FeaturePtr pFormatFeature;
 
-    // Set pixel format. For the sake of simplicity we only support Mono and BGR in this example.
     VmbErrorType err = cam->GetFeatureByName( "PixelFormat", pFormatFeature );
     
     if ( VmbErrorSuccess == err )
     {
-        // Try to set BGR
         err = pFormatFeature->SetValue( VmbPixelFormatBayerGR12 );
-
-        if ( VmbErrorSuccess != err ){
-            std::cout << "ERROR CHANING PIXEL FORMAT" << std::endl;
-        }
-
-        // Try to set exposure time: GigE: ExposureTimeAbs; Alvium USB3: ExposureTime
         FeaturePtr pExposureFeature, pGainFeature;
         
         err = cam->GetFeatureByName("ExposureTimeAbs", pExposureFeature);
-        if ( VmbErrorSuccess != err ) { // try USB3 feature name
+        if ( VmbErrorSuccess != err ) {
             err = cam->GetFeatureByName("ExposureTime", pExposureFeature);
         }
 
         if (VmbErrorSuccess == err) {
-            err = pExposureFeature->SetValue(exposure); // in us, 15000.0us = 15ms
+            err = pExposureFeature->SetValue(exposure);
         }
 
         err = cam->GetFeatureByName("Gain", pGainFeature);
 
         if (VmbErrorSuccess == err) {
-            err = pGainFeature->SetValue(gain); // in us, 15000.0us = 15ms
+            err = pGainFeature->SetValue(gain);
         }
     }
 
@@ -137,4 +76,63 @@ FramePtrVector VimbaController::AqcuireFrame(VmbCPP::CameraPtr cam, float exposu
     }
 
     return frames;
+}
+
+std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions, u_int16_t* error) {
+    std::vector<VmbCPP::CameraPtr> cameras = this->GetCameras();
+    VmbCPP::CameraPtr cam;
+    std::vector<Image> images;
+    
+    if(cameras.size() > 0){
+        for(size_t i = 0; i < cameras.size(); i++){
+            std::string camName;
+            cameras.at(i)->GetModel(camName);
+
+            if(camName == capture_instructions.CameraId){
+                cam = cameras.at(i);
+            }
+        }
+    } else {
+        *error = ERROR_CODE::CAPTURE_ERROR_NO_CAMERAS;
+        return images;
+    }
+
+    if(cam != NULL){
+        cam->Open(VmbAccessModeExclusive);
+        float exposure = capture_instructions.Exposure;
+        VmbCPP::FramePtrVector frames;
+
+        try{
+            frames = this->AqcuireFrame(cam, exposure, capture_instructions.ISO, capture_instructions.NumberOfImages);
+        } catch(const std::exception& e){
+            *error = ERROR_CODE::CAPTURE_ERROR;
+            return images;
+        }
+        
+        u_int width, height, bufferSize;
+        frames.at(0)->GetBufferSize(bufferSize);
+
+        bufferSize+=IMAGE_METADATA_SIZE;
+
+        frames.at(0)->GetWidth(width);
+        frames.at(0)->GetHeight(height);
+
+        for(size_t i = 0; i < capture_instructions.NumberOfImages; i++){
+            u_char* buffer;
+            frames.at(i)->GetImage(buffer);
+            Image img;
+            img.size = bufferSize;
+            img.width = width;
+            img.height = height;
+            img.data = buffer;
+
+            images.push_back(img);
+        }
+
+        cam->Close();
+    } else {
+        *error = ERROR_CODE::CAPTURE_ERROR_CAMERA_NOT_FOUND;
+    }
+
+    return images;
 }

@@ -8,7 +8,7 @@
 #include "param_config.h"
 
 // callback for image capture
-typedef void(*CallbackFunc)(char*, void*);
+typedef void(*CallbackFunc)(char*, void*, uint16_t*);
 
 typedef enum CSPInterfaceType {
     ZMQ = 0,

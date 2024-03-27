@@ -8,6 +8,7 @@
 #include <string.h>
 #include <iostream>
 #include <unistd.h>
+#include <errors.hpp>
 
 MessageQueue::MessageQueue(){}
 
@@ -60,11 +61,12 @@ bool MessageQueue::sendMessage(ImageBatchMessage batch){
     return true;
 }
 
-bool MessageQueue::SendImage(ImageBatch batch){
+bool MessageQueue::SendImage(ImageBatch batch, u_int16_t* error){
     int memspace;
     void* addr;
 
     if((memspace = createMemorySpace(batch.batch_size)) < 0){
+        *error = ERROR_CODE::MESSAGE_QUEUE_ERROR_MEMORY_SPACE_FAILURE;
         return false;
     }
 
@@ -85,6 +87,7 @@ bool MessageQueue::SendImage(ImageBatch batch){
         // cleanup
         shmdt(addr);
         shmctl(memspace, IPC_RMID, nullptr);
+        *error = ERROR_CODE::MESSAGE_QUEUE_ERROR_INSERT_DATA_FAILURE;
         return false;
     }
 }

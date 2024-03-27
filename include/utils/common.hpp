@@ -14,25 +14,39 @@ typedef struct ImageBatch {
     int batch_size;      /* size of the image batch */
     int shm_key;         /* key to shared memory segment of image data */
     int pipeline_id;     /* id of pipeline to utilize for processing */
-    unsigned char *data; /* address to image data (in shared memory) */
+    u_char *data; /* address to image data (in shared memory) */
 } ImageBatch;
 
 typedef struct ImageBatchMessage {
     long mtype;
-    unsigned int height;
-    unsigned int width;
-    unsigned int channels;
-    unsigned int num_images;
-    unsigned int batch_size;
+    u_int height;
+    u_int width;
+    u_int channels;
+    u_int num_images;
+    u_int batch_size;
     int shm_key;
 } ImageBatchMessage;
 
+typedef struct Image {
+    size_t height;
+    size_t width;
+    size_t size;
+    u_char* data;
+} Image;
+
+enum struct CameraType {
+    VMB,
+    IR,
+    Unkown,
+};
+
 typedef struct CaptureMessage {
+    std::string CameraId;
+    CameraType Type;
     size_t NumberOfImages;
-    int Exposure;
-    int Interval;
+    u_int Exposure;
     float ISO;
-    std::string Camera;
+    u_int Interval;
 } CaptureMessage;
 
 // how many bytes in the beginning of the image buffer is allocated for metadata, which is just the size of the image

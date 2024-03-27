@@ -6,6 +6,7 @@
 #include <sstream>
 #include <vector>
 
+#include "camera_controller.hpp"
 #include "vimba_controller.hpp"
 #include "common.hpp"
 #include "message_queue.hpp"
@@ -15,29 +16,53 @@
 #define ISO_DEFAULT 0
 #define NUM_IMAGES_DEFAULT 1
 #define INTERVAL_DEFAULT 0
+#define CAMERA_TYPE_DEFAULT CameraType::VMB
 
 class CaptureController{
     public:
         CaptureController();
         ~CaptureController();
 
-        void Capture(CaptureMessage capture_instructions);
+        void Capture(CaptureMessage capture_instructions, u_int16_t* error);
 
-        static void CaptureCallback(char* capture_instructions, void* obj) {
+        static void CaptureCallback(char* capture_instructions, void* obj, u_int16_t* error) {
             if (obj){
-                CaptureMessage msg;
                 std::string input(capture_instructions);
-                ParseMessage(input, msg);
-                static_cast<CaptureController*>(obj)->Capture(msg);
+                CaptureMessage msg = ParseMessage(input);
+                static_cast<CaptureController*>(obj)->Capture(msg, error);
             }
         }
 
-        static void ParseMessage(const std::string& input, CaptureMessage& message) {
+        static std::unique_ptr<CameraController> CreateControllerInstance(CameraType type){
+            switch (type)
+            {
+            case CameraType::VMB:
+                return std::make_unique<VimbaController>();
+                break;
+            
+            case CameraType::IR:
+                // TODO!: add ir camera class implementation
+                return nullptr;
+                break;
+            
+            case CameraType::Unkown:
+                return nullptr;
+                break;
+            
+            default:
+                return std::make_unique<VimbaController>();
+                break;
+            }
+        }
+
+        static CaptureMessage ParseMessage(const std::string& input) {
+            CaptureMessage message;
             message.Exposure = EXPOSURE_DEFAULT;
             message.ISO = ISO_DEFAULT;
             message.Interval = INTERVAL_DEFAULT;
             message.NumberOfImages = NUM_IMAGES_DEFAULT;
-            message.Camera = "";
+            message.CameraId = "";
+            message.Type = CAMERA_TYPE_DEFAULT;
 
             std::vector<std::string> pairs;
             std::stringstream ss(input);
@@ -66,19 +91,19 @@ class CaptureController{
                     message.Interval = std::stoi(value);
                 } else if (variable == "EXPOSURE") {
                     message.Exposure = std::stoi(value);
-                } else if (variable == "CAMERA") {
-                    message.Camera = std::string(value.c_str());
+                } else if (variable == "CAMERA_ID") {
+                    message.CameraId = std::string(value);
+                } else if (variable == "CAMERA_TYPE") {
+                    message.Type = StringToCameraType(value);
                 } else {
                     continue;
                 }
             }
+            return message;
         }
     
     private:
-        VimbaController* vmbProvider;
         MessageQueue* mq;
-
-        ImageBatch CaptureVimba(CaptureMessage params, VmbCPP::CameraPtr cam);
 };
 
 #endif
