@@ -32,3 +32,17 @@ PARAM_DEFINE_STATIC_VMEM(
     VMEM_CONF_CAPTURE_PARAM,
     "Set instructions on image capture, e.g. CAMERA=XXX;EXPOSURE=XXX;ISO=XXX;"
 );
+
+PARAM_DEFINE_STATIC_VMEM(
+    PARAMID_ERROR_LOG,
+    error_log,
+    PARAM_TYPE_UINT16,
+    -1,
+    0,
+    PM_READONLY,
+    NULL,
+    NULL,
+    config,
+    VMEM_CONF_ERROR_PARAM,
+    "Latest error code"
+);

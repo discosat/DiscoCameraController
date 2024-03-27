@@ -18,6 +18,7 @@
 #include <csp/interfaces/csp_if_kiss.h>
 #include <csp/drivers/usart.h>
 #include <sys/types.h>
+#include <errors.hpp>
 
 // shared resources and mutexes
 char capture_instruction[PARAM_MAX_SIZE];
@@ -147,5 +148,6 @@ void server_start(CSPInterface *interfaceConfig, CallbackFunc callback, void* ob
             callback(capture_instruction, obj, &error);
         }
         pthread_mutex_unlock(&mutex);
+        param_set_uint16(&error_log, error);
     }
 }
