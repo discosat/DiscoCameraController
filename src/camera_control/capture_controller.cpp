@@ -87,7 +87,7 @@ double CaptureController::calculateEntropy(Image image) {
     // find max of BPP
     const size_t bpp_max = (1 << image.bpp) - 1;
     const size_t byte_max =  255;
-    const double scale_factor = byte_max/byte_max;
+    const double scale_factor = byte_max/bpp_max;
     const size_t total_pixels = image.size/bytes;
 
     UIntType* data = reinterpret_cast<UIntType*>(image.data);

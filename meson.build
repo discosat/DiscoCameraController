@@ -24,7 +24,6 @@ sources = files([
     'src/message_queue/message_queue.cpp',
     'src/camera_control/vimba_controller.cpp',
     'src/camera_control/capture_controller.cpp',
-    'src/utils/exposure_helper.cpp',
     'src/communication/csp_server.c',
     'src/communication/param_config.c',
     'src/communication/serial.c',
