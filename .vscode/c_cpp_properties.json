@@ -7,7 +7,8 @@
                 "${workspaceFolder}/src/**",
                 "${workspaceFolder}/include/**",
                 "${workspaceFolder}/lib/param/include",
-                "${workspaceFolder}/include/utils"
+                "${workspaceFolder}/include/utils",
+                "/usr/include/opencv4"
             ],
             "defines": [],
             "cStandard": "c17",

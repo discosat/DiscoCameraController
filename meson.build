@@ -24,6 +24,7 @@ sources = files([
     'src/message_queue/message_queue.cpp',
     'src/camera_control/vimba_controller.cpp',
     'src/camera_control/capture_controller.cpp',
+    'src/utils/exposure_helper.cpp',
     'src/communication/csp_server.c',
     'src/communication/param_config.c',
     'src/communication/serial.c',
@@ -34,8 +35,9 @@ cpp = meson.get_compiler('cpp')
 
 csp_dep = dependency('csp', fallback: ['csp', 'csp_dep'])
 param_dep = dependency('param', fallback: ['param', 'param_dep'])
+opencv_dep = dependency('opencv4')
 
-deps = [csp_dep,param_dep]
+deps = [csp_dep,param_dep,opencv_dep]
 
 dirs = []
 dirs += include_directories(
@@ -57,7 +59,7 @@ else
     dirs += include_directories('lib/VimbaX_2023-4-Linux/api/include')
 endif
 
-csp_app = executable('Disco2CameraControl', sources,
+executable('Disco2CameraControl', sources,
     include_directories : dirs,
     dependencies : deps,
     install : true,

@@ -31,6 +31,7 @@ typedef struct Image {
     size_t height;
     size_t width;
     size_t size;
+    size_t bpp;
     u_char* data;
 } Image;
 

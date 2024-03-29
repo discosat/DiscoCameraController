@@ -125,6 +125,7 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
             img.width = width;
             img.height = height;
             img.data = buffer;
+            img.bpp = VMB_BPP;
 
             images.push_back(img);
         }

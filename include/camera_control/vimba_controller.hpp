@@ -5,6 +5,8 @@
 #include <vector>
 #include "camera_controller.hpp"
 
+#define VMB_BPP 12 // Bits per pixel in the raw output of BayerRG
+
 class VimbaController: public CameraController {
     private:
         VmbCPP::VmbSystem& sys;

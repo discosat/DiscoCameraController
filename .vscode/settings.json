@@ -99,5 +99,7 @@
         "csp_if_zmqhub.h": "c",
         "common.hpp": "c"
     },
-    "cmake.configureOnOpen": true
+    "cmake.configureOnOpen": true,
+    "C_Cpp.default.compileCommands": "/home/ivar/Dicso2CameraControl/builddir/compile_commands.json",
+    "C_Cpp.default.configurationProvider": "mesonbuild.mesonbuild"
 }

@@ -18,6 +18,13 @@
 #define INTERVAL_DEFAULT 0
 #define CAMERA_TYPE_DEFAULT CameraType::VMB
 
+// auto exposure paramteres
+const float MAX_EXPOSURE = 150000; // maximum allowed exposure
+const float MAX_ENTROPY = 8; // maximum entropy achieved by 8 bits
+const size_t STEPS = 8;
+const float EXPOSURE_START = 30000;
+const float LEARNING_RATE = 1000;
+
 class CaptureController{
     public:
         CaptureController();
@@ -104,6 +111,9 @@ class CaptureController{
     
     private:
         MessageQueue* mq;
+
+        double calculateEntropy(Image image);
+        size_t set_exposure(std::unique_ptr<CameraController> controller, CaptureMessage cap_msg);
 };
 
 #endif
