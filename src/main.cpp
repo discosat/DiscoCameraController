@@ -111,15 +111,9 @@ int main(int argc, char *argv[], char *envp[]){
     interfaceConfig.Node = node;
     interfaceConfig.Port = port;
 
-    // VimbaController* vmbProvider = new VimbaController();
-    // MessageQueue* mq = new MessageQueue();
-    // std::vector<VmbCPP::CameraPtr> cameras = vmbProvider->GetCameras();
-
     CaptureController* captureController = new CaptureController();
     server_start(&interfaceConfig, captureController->CaptureCallback, (void*)captureController);
 
-    // delete vmbProvider; 
-    // delete mq;
     delete captureController;
     return 0;
 }

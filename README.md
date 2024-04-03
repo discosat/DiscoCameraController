@@ -35,7 +35,7 @@ Below is a sequence diagram illustrating the entire process of capturing images 
 ### Visible light sensor data
 The camera controller captures raw data from the visible light image sensors in a BayerRG format with a 12-bit pixel depth. In this format, every two bytes in the image data represent a single R, G, or B pixel. This approach is taken to grant the image processing pipeline greater control over image processing. Below is a visual representation of the BayerRG pixel format.
 
-![Sequecne diagram of capturing images and delivering them to the processing pipeline](doc/pixel-formats-raw.png)
+![Sequence diagram of capturing images and delivering them to the processing pipeline](doc/pixel-formats-raw.png)
 
 ### IR light sensor data
 **Undecided**

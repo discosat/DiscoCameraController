@@ -20,7 +20,7 @@ VimbaController::~VimbaController(){
     sys.Shutdown();
 }
 
-std::vector<CameraPtr> VimbaController::GetCameras(){
+std::vector<CameraPtr> VimbaController::getCameras(){
     CameraPtrVector cams;
     VmbErrorType err = sys.GetCameras(cams);
 
@@ -35,7 +35,7 @@ std::vector<CameraPtr> VimbaController::GetCameras(){
     }
 }
 
-FramePtrVector VimbaController::AqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain, int numFrames){
+FramePtrVector VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain, int numFrames){
     FeaturePtr pFormatFeature;
 
     VmbErrorType err = cam->GetFeatureByName( "PixelFormat", pFormatFeature );
@@ -72,6 +72,8 @@ FramePtrVector VimbaController::AqcuireFrame(VmbCPP::CameraPtr cam, float exposu
 
     if (err != VmbErrorSuccess)
     {
+        std::cout << err << std::endl;
+        std::cout << exposure << std::endl;
         throw std::runtime_error("Could not acquire frame, err=" + std::to_string(err));
     }
 
@@ -79,7 +81,7 @@ FramePtrVector VimbaController::AqcuireFrame(VmbCPP::CameraPtr cam, float exposu
 }
 
 std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions, u_int16_t* error) {
-    std::vector<VmbCPP::CameraPtr> cameras = this->GetCameras();
+    std::vector<VmbCPP::CameraPtr> cameras = this->getCameras();
     VmbCPP::CameraPtr cam;
     std::vector<Image> images;
     
@@ -87,6 +89,7 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
         for(size_t i = 0; i < cameras.size(); i++){
             std::string camName;
             cameras.at(i)->GetModel(camName);
+            std::cout << "Camera found: " << camName << std::endl;
 
             if(camName == capture_instructions.CameraId){
                 cam = cameras.at(i);
@@ -103,8 +106,9 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
         VmbCPP::FramePtrVector frames;
 
         try{
-            frames = this->AqcuireFrame(cam, exposure, capture_instructions.ISO, capture_instructions.NumberOfImages);
+            frames = this->aqcuireFrame(cam, exposure, capture_instructions.ISO, capture_instructions.NumberOfImages);
         } catch(const std::exception& e){
+            std::cout << "Error!" << std::endl;
             *error = ERROR_CODE::CAPTURE_ERROR;
             return images;
         }
@@ -120,12 +124,15 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
         for(size_t i = 0; i < capture_instructions.NumberOfImages; i++){
             u_char* buffer;
             frames.at(i)->GetImage(buffer);
+
             Image img;
             img.size = bufferSize;
             img.width = width;
             img.height = height;
-            img.data = buffer;
+            img.data = new u_char[bufferSize];
             img.bpp = VMB_BPP;
+
+            std::memcpy(img.data, buffer, bufferSize * sizeof(u_char));
 
             images.push_back(img);
         }

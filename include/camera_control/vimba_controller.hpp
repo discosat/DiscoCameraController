@@ -12,8 +12,8 @@ class VimbaController: public CameraController {
         VmbCPP::VmbSystem& sys;
         std::vector<VmbCPP::CameraPtr> cameras;
 
-        std::vector<VmbCPP::CameraPtr> GetCameras();
-        VmbCPP::FramePtrVector AqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain, int numFrames);
+        std::vector<VmbCPP::CameraPtr> getCameras();
+        VmbCPP::FramePtrVector aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain, int numFrames);
 
     public:
         VimbaController();

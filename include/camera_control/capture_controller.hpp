@@ -5,6 +5,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <type_traits>
 
 #include "camera_controller.hpp"
 #include "vimba_controller.hpp"
@@ -22,7 +23,7 @@
 const float MAX_EXPOSURE = 150000; // maximum allowed exposure
 const float MAX_ENTROPY = 8; // maximum entropy achieved by 8 bits
 const size_t STEPS = 8;
-const float EXPOSURE_START = 30000;
+const float EXPOSURE_START = 5000;
 const float LEARNING_RATE = 1000;
 
 class CaptureController{
@@ -35,7 +36,9 @@ class CaptureController{
         static void CaptureCallback(char* capture_instructions, void* obj, u_int16_t* error) {
             if (obj){
                 std::string input(capture_instructions);
+                std::cout << capture_instructions << std::endl;
                 CaptureMessage msg = ParseMessage(input);
+
                 static_cast<CaptureController*>(obj)->Capture(msg, error);
             }
         }
@@ -113,7 +116,7 @@ class CaptureController{
         MessageQueue* mq;
 
         double calculateEntropy(Image image);
-        size_t set_exposure(std::unique_ptr<CameraController> controller, CaptureMessage cap_msg);
+        size_t setExposure(CameraController *controller, CaptureMessage cap_msg);
 };
 
 #endif

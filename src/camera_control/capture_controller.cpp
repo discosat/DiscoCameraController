@@ -17,7 +17,7 @@ void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* 
         *error = ERROR_CODE::PARSING_ERROR_NUM_IMAGES_INVALID;
         return;
     }
-    
+
     std::cout << "New capture instructions:" << std::endl;
     std::cout << "\tCamera: \"" << capture_instructions.CameraId << "\"" << std::endl;
     std::cout << "\tExposure: " << capture_instructions.Exposure << std::endl;
@@ -26,13 +26,15 @@ void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* 
     
     std::unique_ptr<CameraController> controller = CaptureController::CreateControllerInstance(capture_instructions.Type);
 
-    if(capture_instructions.Exposure == 0){
-        capture_instructions.Exposure = set_exposure(std::move(controller), capture_instructions);
-    }
-
     if(controller == nullptr){
         *error = ERROR_CODE::PARSING_ERROR_CAMERA_TYPE_INVALID;
         return;
+    }
+
+    if(capture_instructions.Exposure == 0){
+        std::cout << "Finding exposure" << std::endl;
+        capture_instructions.Exposure = setExposure(controller.get(), capture_instructions);
+        std::cout << "Found exposure: " << capture_instructions.Exposure << std::endl;
     }
 
     auto images = controller->Capture(capture_instructions, error);
@@ -50,6 +52,7 @@ void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* 
 
         std::memcpy((void*)(&total_buffer[offset]), &image_size, sizeof(unsigned int));
         std::memcpy((void*)(&total_buffer[offset+IMAGE_METADATA_SIZE]), images.at(i).data, image_size * sizeof(unsigned char));
+        delete[] images.at(i).data;
     }
 
     ImageBatch batch;
@@ -65,6 +68,7 @@ void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* 
     } else {
         std::cout << "Sending image was unsuccessful" << std::endl;
     }
+    delete[] total_buffer;
 }
 
 double CaptureController::calculateEntropy(Image image) {
@@ -77,23 +81,25 @@ double CaptureController::calculateEntropy(Image image) {
     // needed number of bytes to store BPP
     size_t bytes = image.bpp/8;
     if(image.bpp%8)bytes++;
+
+    // find max of BPP
+    const size_t bpp_max = (1 << image.bpp) - 1;
+    const size_t byte_max =  255;
+
     using UIntType = uint8_t;
-    
+
     // if image data uses 2 bytes
     if(bytes == 2){
         using UIntType = uint16_t;
     }
 
-    // find max of BPP
-    const size_t bpp_max = (1 << image.bpp) - 1;
-    const size_t byte_max =  255;
-    const double scale_factor = byte_max/bpp_max;
+    const double scale_factor = (1.0*byte_max)/bpp_max;
     const size_t total_pixels = image.size/bytes;
 
     UIntType* data = reinterpret_cast<UIntType*>(image.data);
 
     for(size_t i = 0; i < total_pixels; i++){
-        UIntType pixel = static_cast<UIntType>(data[i]);
+        UIntType pixel = data[i];
         uint8_t value = static_cast<uint8_t>(pixel * scale_factor);
         hist[value]++;
     }
@@ -108,7 +114,7 @@ double CaptureController::calculateEntropy(Image image) {
     return -total;
 }
 
-size_t CaptureController::set_exposure(std::unique_ptr<CameraController> controller, CaptureMessage cap_msg){
+size_t CaptureController::setExposure(CameraController *controller, CaptureMessage cap_msg){
     float currentExposure = EXPOSURE_START, lastEntropy = -1, lastExposure = -1, slope = 1;
     cap_msg.NumberOfImages = 1;
     u_int16_t error = 0;
@@ -118,6 +124,8 @@ size_t CaptureController::set_exposure(std::unique_ptr<CameraController> control
         cap_msg.Exposure = currentExposure;
         Image img = controller->Capture(cap_msg, &error).at(0);
         float currentEntropy = calculateEntropy(img);
+
+        std::cout << currentExposure << " | " << currentEntropy << std::endl;
 
         if(lastEntropy == -1){
             lastEntropy = currentEntropy;
@@ -138,5 +146,6 @@ size_t CaptureController::set_exposure(std::unique_ptr<CameraController> control
         steps++;
     }
 
+    std::cout << "Exp: " << currentExposure << std::endl;
     return std::round(currentExposure);
 }
