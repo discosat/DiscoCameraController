@@ -8,7 +8,7 @@ class MessageQueue{
     private:
         int createMemorySpace(size_t size);
         void* insertMemory(unsigned char *data, size_t size, int shm_id);
-        bool sendMessage(ImageBatchMessage batch);
+        bool sendMessage(ImageBatch batch);
 
     public:
         MessageQueue();

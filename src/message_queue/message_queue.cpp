@@ -39,8 +39,7 @@ void* MessageQueue::insertMemory(unsigned char *data, size_t size, int shm_id){
     return shmaddr;
 }
 
-bool MessageQueue::sendMessage(ImageBatchMessage batch){
-    key_t key;
+bool MessageQueue::sendMessage(ImageBatch batch){
     int msgQueueId;
 
     if ((msgQueueId = msgget(MSG_QUEUE_KEY, 0644 | IPC_CREAT)) == -1) {
@@ -67,16 +66,10 @@ bool MessageQueue::SendImage(ImageBatch batch, u_int16_t* error){
 
     addr = insertMemory(batch.data, batch.batch_size, memspace);
 
-    ImageBatchMessage msg;
-    msg.mtype = 1;
-    msg.height = batch.height;
-    msg.width = batch.width;
-    msg.channels = batch.channels;
-    msg.num_images = batch.num_images;
-    msg.shm_key = memspace;
-    msg.batch_size = batch.batch_size;
+    batch.mtype = 1;
+    batch.shm_key  = memspace;
 
-    if(addr != NULL && sendMessage(msg) && (shmdt(addr)) != -1){
+    if(addr != NULL && sendMessage(batch) && (shmdt(addr)) != -1){
         return true;
     } else {
         // cleanup
