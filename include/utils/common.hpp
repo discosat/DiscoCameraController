@@ -53,4 +53,6 @@ typedef struct CaptureMessage {
 // how many bytes in the beginning of the image buffer is allocated for metadata, which is just the size of the image
 #define IMAGE_METADATA_SIZE 4
 
+#define MSG_QUEUE_KEY 71
+
 #endif

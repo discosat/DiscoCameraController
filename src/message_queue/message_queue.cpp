@@ -43,12 +43,7 @@ bool MessageQueue::sendMessage(ImageBatchMessage batch){
     key_t key;
     int msgQueueId;
 
-    if ((key = ftok("/tmp", 'B')) == -1) {
-        perror("ftok");
-        return false;
-    }
-
-    if ((msgQueueId = msgget(key, 0644 | IPC_CREAT)) == -1) {
+    if ((msgQueueId = msgget(MSG_QUEUE_KEY, 0644 | IPC_CREAT)) == -1) {
         perror("msgget");
         return false;
     }
