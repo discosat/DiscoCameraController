@@ -69,6 +69,8 @@ bool MessageQueue::SendImage(ImageBatch batch, u_int16_t* error){
     batch.mtype = 1;
     batch.shm_key  = memspace;
 
+    std::cout << "shm_key: " << (void*)memspace << std::endl;
+
     if(addr != NULL && sendMessage(batch) && (shmdt(addr)) != -1){
         return true;
     } else {
