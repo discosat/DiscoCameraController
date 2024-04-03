@@ -14,10 +14,15 @@ MessageQueue::MessageQueue(){}
 
 MessageQueue::~MessageQueue(){}
 
-int MessageQueue::createMemorySpace(size_t size){
+int MessageQueue::createMemorySpaceKey(){
     auto now = std::chrono::system_clock::now();
     auto duration = now.time_since_epoch();
-    key_t key = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+    uint key = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+    
+    return key;
+}
+
+int MessageQueue::createMemorySpace(size_t size, int key){
     int shm_id = 0;
 
     if ((shm_id = shmget(key, size, IPC_CREAT|0600 )) < 0) {
@@ -57,9 +62,10 @@ bool MessageQueue::sendMessage(ImageBatch batch){
 
 bool MessageQueue::SendImage(ImageBatch batch, u_int16_t* error){
     int memspace;
+    int memspaceKey = createMemorySpaceKey();
     void* addr;
 
-    if((memspace = createMemorySpace(batch.batch_size)) < 0){
+    if((memspace = createMemorySpace(batch.batch_size, memspaceKey)) < 0){
         *error = ERROR_CODE::MESSAGE_QUEUE_ERROR_MEMORY_SPACE_FAILURE;
         return false;
     }
@@ -67,9 +73,7 @@ bool MessageQueue::SendImage(ImageBatch batch, u_int16_t* error){
     addr = insertMemory(batch.data, batch.batch_size, memspace);
 
     batch.mtype = 1;
-    batch.shm_key  = memspace;
-
-    std::cout << "shm_key: " << (void*)memspace << std::endl;
+    batch.shm_key  = memspaceKey;
 
     if(addr != NULL && sendMessage(batch) && (shmdt(addr)) != -1){
         return true;

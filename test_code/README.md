@@ -8,3 +8,6 @@ gcc -c zmqproxy.c -o proxy.o \
  gcc proxy.o -o proxy -lcsp -lzmq
 
  ./client -z localhost -C 2 -a 10
+
+
+ gcc -o camera camera_control.c -lm

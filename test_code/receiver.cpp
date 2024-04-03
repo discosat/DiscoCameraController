@@ -27,21 +27,14 @@ typedef struct ImageBatch {
     unsigned char *data; /* address to image data (in shared memory) */
 } ImageBatch;
 
-typedef struct ImageBatchMessage {
-    long mtype;
-    unsigned int height;
-    unsigned int width;
-    unsigned int channels;
-    unsigned int num_images;
-    unsigned int batch_size;
-    int shm_key;
-} ImageBatchMessage;
-
-void readMem(ImageBatchMessage msg){
-    int shmid = msg.shm_key;
-
+void readMem(ImageBatch msg){
     // Attach to the shared memory segment
-    void* shared_memory = shmat(msg.shm_key, nullptr, 0);
+    std::cout << msg.height << std::endl;
+    std::cout << msg.width << std::endl;
+    std::cout << msg.shm_key << std::endl;
+    std::cout << msg.batch_size << std::endl;
+    int shmkey = shmget(msg.shm_key, 0, 0);
+    void* shared_memory = shmat(shmkey, nullptr, 0);
 
     // unable to attach -> error
     if (shared_memory == (void*)-1) {
@@ -61,7 +54,7 @@ void readMem(ImageBatchMessage msg){
     }
 
     // Detach from the shared memory segment !VERY IMPORTANT!
-    shmctl(shmid, IPC_RMID, nullptr);
+    shmctl(shmkey, IPC_RMID, nullptr);
     std::string time = std::to_string(std::time(0));
 
     // Read from shared memory
@@ -117,18 +110,12 @@ void readMem(ImageBatchMessage msg){
 }
 
 int main() {
-    key_t key;
     int msgQueueId;
-    ImageBatchMessage message;
-
-    if ((key = ftok("/tmp", 'B')) == -1) {
-        perror("ftok");
-        exit(1);
-    }
+    ImageBatch message;
 
     while(true) {
         // connect to the message queue
-        if((msgQueueId = msgget(key, 0644)) == -1 || msgrcv(msgQueueId, &message, sizeof(message), 1, 0) == -1){
+        if((msgQueueId = msgget(71, 0644)) == -1 || msgrcv(msgQueueId, &message, sizeof(message), 1, 0) == -1){
             continue;
         }
 

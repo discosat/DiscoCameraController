@@ -6,7 +6,8 @@
 
 class MessageQueue{
     private:
-        int createMemorySpace(size_t size);
+        int createMemorySpaceKey();
+        int createMemorySpace(size_t size, int key);
         void* insertMemory(unsigned char *data, size_t size, int shm_id);
         bool sendMessage(ImageBatch batch);
 
