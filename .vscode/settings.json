@@ -101,5 +101,6 @@
     },
     "cmake.configureOnOpen": true,
     "C_Cpp.default.compileCommands": "/home/ivar/Dicso2CameraControl/builddir/compile_commands.json",
-    "C_Cpp.default.configurationProvider": "mesonbuild.mesonbuild"
+    "C_Cpp.default.configurationProvider": "mesonbuild.mesonbuild",
+    "C_Cpp.errorSquiggles": "disabled"
 }

@@ -58,7 +58,7 @@ void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* 
     ImageBatch batch;
     batch.height = height;
     batch.width = width;
-    batch.channels = 1;
+    batch.channels = capture_instructions.PipelineId;
     batch.num_images = capture_instructions.NumberOfImages;
     batch.batch_size = bufferSize*capture_instructions.NumberOfImages;
     batch.data = total_buffer;
@@ -111,19 +111,24 @@ double CaptureController::calculateEntropy(Image image) {
             total += probability * log2(probability);
         }
     }
+
+    //delete[] hist;
     return -total;
 }
 
 size_t CaptureController::setExposure(CameraController *controller, CaptureMessage cap_msg){
-    float currentExposure = EXPOSURE_START, lastEntropy = -1, lastExposure = -1, slope = 1;
+    double currentExposure = EXPOSURE_START, lastEntropy = -1, lastExposure = -1, slope = 1;
+    
     cap_msg.NumberOfImages = 1;
+    cap_msg.Interval = 0;
+    
     u_int16_t error = 0;
     size_t steps = 0;
 
     while(currentExposure < MAX_EXPOSURE && steps < STEPS){
         cap_msg.Exposure = currentExposure;
         Image img = controller->Capture(cap_msg, &error).at(0);
-        float currentEntropy = calculateEntropy(img);
+        double currentEntropy = calculateEntropy(img);
 
         std::cout << currentExposure << " | " << currentEntropy << std::endl;
 
@@ -131,11 +136,16 @@ size_t CaptureController::setExposure(CameraController *controller, CaptureMessa
             lastEntropy = currentEntropy;
             lastExposure = currentExposure;
 
-            currentExposure += LEARNING_RATE;
+            currentExposure += EXPOSURE_START;
         } else {
-            float exposure_delta = currentExposure - lastExposure;
-            float entropy_delta = currentEntropy - lastEntropy;
-            slope = (entropy_delta/MAX_ENTROPY)/(exposure_delta/MAX_EXPOSURE); // normalized slope
+            double exposure_delta = ((double)currentExposure/MAX_EXPOSURE) - ((double)lastExposure/MAX_EXPOSURE);
+            double entropy_delta = ((double)currentEntropy/MAX_ENTROPY) - ((double)lastEntropy/MAX_ENTROPY);
+            slope = entropy_delta/exposure_delta; // normalized slope
+
+            // no change so no need to continue
+            if(slope == 0){
+                break;
+            }
 
             lastEntropy = currentEntropy;
             lastExposure = currentExposure;

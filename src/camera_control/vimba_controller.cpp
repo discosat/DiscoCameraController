@@ -1,8 +1,9 @@
+#include "vimba_controller.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <VmbCPP/VmbCPP.h>
-#include "vimba_controller.hpp"
 #include "errors.hpp"
+#include "common.hpp"
 #include <memory>
 
 using namespace VmbCPP;
@@ -35,9 +36,60 @@ std::vector<CameraPtr> VimbaController::getCameras(){
     }
 }
 
-FramePtrVector VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain, int numFrames){
-    FeaturePtr pFormatFeature;
+bool VimbaController::turnOnCamera(VmbCPP::CameraPtr cam){
+    FeaturePtr powerSavingFeature;
+    VmbErrorType err = cam->GetFeatureByName( "DevicePowerSavingMode", powerSavingFeature );
 
+    if ( VmbErrorSuccess == err ){
+        err = powerSavingFeature->SetValue("Disabled");
+        std::cout << err << std::endl;
+        return VmbErrorSuccess == err;
+    } else {
+        std::cout << err << std::endl;
+        return false;
+    }
+}
+
+bool VimbaController::turnOffCamera(VmbCPP::CameraPtr cam){
+    FeaturePtr powerSavingFeature;
+    VmbErrorType err = cam->GetFeatureByName( "DevicePowerSavingMode", powerSavingFeature );
+
+    if ( VmbErrorSuccess == err ){
+        err = powerSavingFeature->SetValue("SuspendMode");
+        return VmbErrorSuccess == err;
+    } else {
+        return false;
+    }
+}
+
+bool VimbaController::setDelay(VmbCPP::CameraPtr cam, uint delay){
+    double hertz = ((double)1.0)/(((double)delay)/1000000);
+    
+    FeaturePtr acquisitionFrameRateEnable, acquisitionFrameRate;
+    VmbErrorType err = VmbErrorSuccess;
+
+    if ((err = cam->GetFeatureByName( "AcquisitionFrameRateEnable", acquisitionFrameRateEnable )) == VmbErrorSuccess ){
+        err = acquisitionFrameRateEnable->SetValue(true);
+
+        if(err == VmbErrorSuccess && 
+            (err = cam->GetFeatureByName( "AcquisitionFrameRate", acquisitionFrameRate )) == VmbErrorSuccess ){
+                err = acquisitionFrameRate->SetValue((float)hertz);
+                return VmbErrorSuccess == err;
+            }
+    }
+    return true;
+}
+
+FramePtrVector VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain, uint numFrames, uint delay){
+    if(!turnOnCamera(cam)){
+        throw std::runtime_error("Could not turn on camera");
+    }
+
+    if(delay > 0){
+        setDelay(cam, delay);
+    }
+
+    FeaturePtr pFormatFeature;
     VmbErrorType err = cam->GetFeatureByName( "PixelFormat", pFormatFeature );
     
     if ( VmbErrorSuccess == err )
@@ -63,7 +115,7 @@ FramePtrVector VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposu
 
     FramePtrVector frames;
 
-    for(int i = 0; i < numFrames; i++){
+    for(uint i = 0; i < numFrames; i++){
         FramePtr frame;
         frames.push_back(frame);
     }
@@ -72,9 +124,11 @@ FramePtrVector VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposu
 
     if (err != VmbErrorSuccess)
     {
-        std::cout << err << std::endl;
-        std::cout << exposure << std::endl;
         throw std::runtime_error("Could not acquire frame, err=" + std::to_string(err));
+    }
+
+    if(!turnOffCamera(cam)){
+        std::cerr << "Could not turn off camera" << std::endl;
     }
 
     return frames;
@@ -106,7 +160,8 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
         VmbCPP::FramePtrVector frames;
 
         try{
-            frames = this->aqcuireFrame(cam, exposure, capture_instructions.ISO, capture_instructions.NumberOfImages);
+            std::cout << "endl" << std::endl;
+            frames = this->aqcuireFrame(cam, exposure, capture_instructions.ISO, capture_instructions.NumberOfImages, capture_instructions.Interval);
         } catch(const std::exception& e){
             std::cout << "Error!" << std::endl;
             *error = ERROR_CODE::CAPTURE_ERROR;

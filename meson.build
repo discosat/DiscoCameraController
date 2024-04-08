@@ -23,6 +23,7 @@ sources = files([
     'src/main.cpp',
     'src/message_queue/message_queue.cpp',
     'src/camera_control/vimba_controller.cpp',
+    'src/camera_control/ir_controller.cpp',
     'src/camera_control/capture_controller.cpp',
     'src/communication/csp_server.c',
     'src/communication/param_config.c',

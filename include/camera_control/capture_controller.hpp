@@ -18,13 +18,14 @@
 #define NUM_IMAGES_DEFAULT 1
 #define INTERVAL_DEFAULT 0
 #define CAMERA_TYPE_DEFAULT CameraType::VMB
+#define PIPELINE_ID_DEFAULT 1
 
 // auto exposure paramteres
 const float MAX_EXPOSURE = 150000; // maximum allowed exposure
 const float MAX_ENTROPY = 8; // maximum entropy achieved by 8 bits
 const size_t STEPS = 8;
 const float EXPOSURE_START = 5000;
-const float LEARNING_RATE = 1000;
+const float LEARNING_RATE = 500;
 
 class CaptureController{
     public:
@@ -73,6 +74,7 @@ class CaptureController{
             message.NumberOfImages = NUM_IMAGES_DEFAULT;
             message.CameraId = "";
             message.Type = CAMERA_TYPE_DEFAULT;
+            message.PipelineId = PIPELINE_ID_DEFAULT;
 
             std::vector<std::string> pairs;
             std::stringstream ss(input);
@@ -105,6 +107,8 @@ class CaptureController{
                     message.CameraId = std::string(value);
                 } else if (variable == "CAMERA_TYPE") {
                     message.Type = StringToCameraType(value);
+                } else if (variable == "PIPELINE_ID") {
+                    message.PipelineId = std::stoi(value);
                 } else {
                     continue;
                 }

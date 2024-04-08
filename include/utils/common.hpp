@@ -48,6 +48,7 @@ typedef struct CaptureMessage {
     u_int Exposure;
     float ISO;
     u_int Interval;
+    u_int PipelineId;
 } CaptureMessage;
 
 // how many bytes in the beginning of the image buffer is allocated for metadata, which is just the size of the image

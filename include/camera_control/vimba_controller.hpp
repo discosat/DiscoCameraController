@@ -13,7 +13,10 @@ class VimbaController: public CameraController {
         std::vector<VmbCPP::CameraPtr> cameras;
 
         std::vector<VmbCPP::CameraPtr> getCameras();
-        VmbCPP::FramePtrVector aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain, int numFrames);
+        VmbCPP::FramePtrVector aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain, uint numFrames, uint delay);
+        bool turnOnCamera(VmbCPP::CameraPtr cam);
+        bool turnOffCamera(VmbCPP::CameraPtr cam);
+        bool setDelay(VmbCPP::CameraPtr cam, uint delay);
 
     public:
         VimbaController();
