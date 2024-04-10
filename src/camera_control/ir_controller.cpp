@@ -40,7 +40,6 @@ std::vector<Image> IRController::Capture(CaptureMessage& capture_instructions, u
 
     cv::VideoCapture cap;
     if (!openCamera(cap, camera_name)){
-
     }
 
     for(size_t i = 0; i < capture_instructions.NumberOfImages; i++){

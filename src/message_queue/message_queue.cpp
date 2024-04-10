@@ -52,7 +52,7 @@ bool MessageQueue::sendMessage(ImageBatch batch){
         return false;
     }
 
-    if (msgsnd(msgQueueId, &batch, sizeof(batch), 0) == -1) {
+    if (msgsnd(msgQueueId, &batch, sizeof(batch)-sizeof(batch.mtype), 0) == -1) {
         perror("msgsnd");
         return false;
     }

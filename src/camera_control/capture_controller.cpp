@@ -23,6 +23,7 @@ void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* 
     std::cout << "\tExposure: " << capture_instructions.Exposure << std::endl;
     std::cout << "\tISO: " << capture_instructions.ISO << std::endl;
     std::cout  << "\tNumber of images: " << capture_instructions.NumberOfImages << std::endl;
+    std::cout  << "\tPipeline id: " << capture_instructions.PipelineId << std::endl;
     
     std::unique_ptr<CameraController> controller = CaptureController::CreateControllerInstance(capture_instructions.Type);
 
@@ -58,7 +59,8 @@ void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* 
     ImageBatch batch;
     batch.height = height;
     batch.width = width;
-    batch.channels = capture_instructions.PipelineId;
+    batch.channels = 1;
+    batch.pipeline_id = capture_instructions.PipelineId;
     batch.num_images = capture_instructions.NumberOfImages;
     batch.batch_size = bufferSize*capture_instructions.NumberOfImages;
     batch.data = total_buffer;

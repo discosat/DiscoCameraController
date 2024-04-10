@@ -71,39 +71,40 @@ void readMem(ImageBatch msg){
         std::cout << "Image width: " << msg.width << std::endl;
         std::cout << "Image size: " << image_size << std::endl;
 
-        cv::Mat rawImage(msg.height, msg.width, CV_16UC1, image_data);
-        rawImage *= 16; // scale image to use 16 bits
-        cv::Mat demosaicedImage;
-        cv::cvtColor(rawImage, demosaicedImage, cv::COLOR_BayerGR2BGR);
+        // cv::Mat rawImage(msg.height, msg.width, CV_16UC1, image_data);
+        // rawImage *= 16; // scale image to use 16 bits
+        // cv::Mat demosaicedImage;
+        // cv::cvtColor(rawImage, demosaicedImage, cv::COLOR_BayerGR2BGR);
 
-        // save to path
-        fs::path dir ("./");
-        fs::path file ("image_" + std::to_string(std::time(0)) + "_" + std::to_string(i) + ".png");
-        std::string full_path = (dir / file).string();
-        imwrite(full_path, demosaicedImage);
-        delete[] image_data;
-
+        // // save to path
         // fs::path dir ("./");
-        // fs::path file ("image_" + time + "_" + std::to_string(i) + "_8bit.raw");
+        // fs::path file ("image_" + std::to_string(std::time(0)) + "_" + std::to_string(i) + ".png");
         // std::string full_path = (dir / file).string();
-
-        // // Open a file for binary writing
-        // std::ofstream outFile(full_path, std::ios::out | std::ios::binary);
-
-        // // Check if the file opened successfully
-        // if (!outFile) {
-        //     std::cerr << "Error opening file for writing!" << std::endl;
-        //     return;
-        // }
-
-        // // Write the raw data to the file
-        // outFile.write(reinterpret_cast<char*>(image_data), localDataSize);
-
-        // // Close the file
-        // outFile.close();
-
-        // std::cout << "Binary data saved to file successfully." << std::endl;
+        // imwrite(full_path, demosaicedImage);
         // delete[] image_data;
+
+        fs::path dir ("./");
+        fs::path file ("image_" + time + "_" + std::to_string(i) + "_12bit.bayerRG");
+        std::string full_path = (dir / file).string();
+        std::cout << full_path << std::endl;
+
+        // Open a file for binary writing
+        std::ofstream outFile(full_path, std::ios::out | std::ios::binary);
+
+        // Check if the file opened successfully
+        if (!outFile) {
+            std::cerr << "Error opening file for writing!" << std::endl;
+            return;
+        }
+
+        // Write the raw data to the file
+        outFile.write(reinterpret_cast<char*>(image_data), localDataSize);
+
+        // Close the file
+        outFile.close();
+
+        std::cout << "Binary data saved to file successfully." << std::endl;
+        delete[] image_data;
     }
 
     delete[] local_data;
