@@ -9,6 +9,7 @@
 
 #include "camera_controller.hpp"
 #include "vimba_controller.hpp"
+#include "ir_controller.hpp"
 #include "common.hpp"
 #include "message_queue.hpp"
 
@@ -52,8 +53,7 @@ class CaptureController{
                 break;
             
             case CameraType::IR:
-                // TODO!: add ir camera class implementation
-                return nullptr;
+                return std::make_unique<IRController>();
                 break;
             
             case CameraType::Unkown:
