@@ -1,4 +1,9 @@
-g++ receiver.cpp -o receiver -lrt `pkg-config --cflags --libs opencv4`
+g++ -std=c++17 -o receiver receiver.cpp ../src/message_queue/metadata.pb.cpp \
+    -I/usr/include/protobuf/ \
+    -I../include/message_queue/ \
+    /usr/lib/x86_64-linux-gnu/libprotobuf.so \
+    -lrt `pkg-config --cflags --libs opencv4`
+
 
 g++ -std=c++11 -I../lib/libcsp/include csp_server_posix.cpp csp_server.cpp -o server -L../lib/libcsp/buildir -lcsp
 

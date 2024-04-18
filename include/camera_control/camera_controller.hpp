@@ -10,6 +10,7 @@
 const std::map<std::string, CameraType> CameraTypeMap = {
     {"VMB", CameraType::VMB},
     {"IR", CameraType::IR},
+    {"TEST", CameraType::TEST},
 };
 
 static inline CameraType StringToCameraType(std::string type) {

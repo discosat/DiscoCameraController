@@ -3,6 +3,7 @@
 #include <memory>
 #include "errors.hpp"
 #include <cmath>
+#include "metadata.pb.hpp"
 
 CaptureController::CaptureController(){
     this->mq = new MessageQueue();
@@ -10,6 +11,55 @@ CaptureController::CaptureController(){
 
 CaptureController::~CaptureController(){
     delete this->mq;
+}
+
+uchar* CaptureController::createImageMessageData(std::vector<Image> &images, CaptureMessage capture_instructions, size_t &size){
+    u_char* total_buffer;
+    std::vector<u_char*> image_buffers;
+    std::vector<size_t> image_buffer_sizes;
+    size_t total_size = 0;
+
+    for (size_t i = 0; i < images.size(); i++){
+        Metadata metadata;
+
+        metadata.set_timestamp(images.at(i).timestamp);
+        metadata.set_bits_pixel(images.at(i).bpp);
+        metadata.set_channels(images.at(i).channels);
+        metadata.set_width(images.at(i).width);
+        metadata.set_height(images.at(i).height);
+        metadata.set_size(images.at(i).size);
+        metadata.set_camera(capture_instructions.CameraId);
+
+        uint metadataSize = (uint)metadata.ByteSizeLong();
+        uchar* metadataBuffer = new uchar[metadataSize];
+        metadata.SerializeToArray(metadataBuffer, metadataSize);
+        
+        size_t buffer_size = sizeof(metadataSize) + metadataSize + images.at(i).size;
+        unsigned char* buffer = new uchar[buffer_size];
+
+        std::memcpy(buffer, &metadataSize, sizeof(metadataSize)); // write the size of the metadata in the first 4 bytes
+        std::memcpy(&buffer[sizeof(metadataSize)], metadataBuffer, metadataSize); // write the metadata
+        std::memcpy(&buffer[sizeof(metadataSize)+metadataSize], images.at(i).data, images.at(i).size); // write the image data
+
+        delete[] images.at(i).data;
+        delete[] metadataBuffer;
+        
+        image_buffers.push_back(buffer);
+        image_buffer_sizes.push_back(buffer_size);
+        total_size += buffer_size;
+    }
+
+    total_buffer = new uchar[total_size];
+    size_t offset = 0;
+
+    for (size_t i = 0; i < image_buffers.size(); i++){
+        std::memcpy(&total_buffer[offset], image_buffers.at(i), image_buffer_sizes.at(i)); // combine all buffers into a single buffer
+        offset += image_buffer_sizes.at(i);
+        delete[] image_buffers.at(i);
+    }
+
+    size = total_size;
+    return total_buffer;
 }
 
 void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* error){
@@ -44,25 +94,13 @@ void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* 
         return;
     }
 
-    u_int image_size = images.at(0).size, width = images.at(0).width, height = images.at(0).height;
-    u_int bufferSize = image_size + IMAGE_METADATA_SIZE;
-    unsigned char* total_buffer = new unsigned char[bufferSize*capture_instructions.NumberOfImages];
-
-    for(size_t i = 0; i < images.size(); i++){
-        unsigned int offset = i*bufferSize;
-
-        std::memcpy((void*)(&total_buffer[offset]), &image_size, sizeof(unsigned int));
-        std::memcpy((void*)(&total_buffer[offset+IMAGE_METADATA_SIZE]), images.at(i).data, image_size * sizeof(unsigned char));
-        delete[] images.at(i).data;
-    }
+    size_t size = 0;
+    unsigned char* total_buffer = this->createImageMessageData(images, capture_instructions, size);
 
     ImageBatch batch;
-    batch.height = height;
-    batch.width = width;
-    batch.channels = 1;
     batch.pipeline_id = capture_instructions.PipelineId;
     batch.num_images = capture_instructions.NumberOfImages;
-    batch.batch_size = bufferSize*capture_instructions.NumberOfImages;
+    batch.batch_size = size;
     batch.data = total_buffer;
 
     if(mq->SendImage(batch, error)){

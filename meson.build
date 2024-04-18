@@ -22,7 +22,9 @@ add_global_arguments('-I../include', language: 'c')
 sources = files([
     'src/main.cpp',
     'src/message_queue/message_queue.cpp',
+    'src/message_queue/metadata.pb.cpp',
     'src/camera_control/vimba_controller.cpp',
+    'src/camera_control/test_controller.cpp',
     'src/camera_control/ir_controller.cpp',
     'src/camera_control/capture_controller.cpp',
     'src/communication/csp_server.c',
@@ -35,9 +37,10 @@ cpp = meson.get_compiler('cpp')
 
 csp_dep = dependency('csp', fallback: ['csp', 'csp_dep'])
 param_dep = dependency('param', fallback: ['param', 'param_dep'])
+proto_c_dep = dependency('protobuf', fallback: ['libprotobuf', 'proto_c_dep'])
 opencv_dep = dependency('opencv4')
 
-deps = [csp_dep,param_dep,opencv_dep]
+deps = [csp_dep,param_dep,opencv_dep,proto_c_dep]
 
 dirs = []
 dirs += include_directories(

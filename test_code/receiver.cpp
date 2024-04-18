@@ -10,6 +10,7 @@
 #include <ctime>
 #include <bits/stdc++.h>
 #include <chrono>
+#include "metadata.pb.hpp"
 
 namespace fs = std::filesystem;
 
@@ -17,20 +18,15 @@ using namespace std;
 
 typedef struct ImageBatch {
     long mtype;          /* message type to read from the message queue */
-    int height;          /* height of images */
-    int width;           /* width of images */
-    int channels;        /* channels of images */
     int num_images;      /* amount of images */
     int batch_size;      /* size of the image batch */
     int shm_key;         /* key to shared memory segment of image data */
     int pipeline_id;     /* id of pipeline to utilize for processing */
-    unsigned char *data; /* address to image data (in shared memory) */
+    u_char *data; /* address to image data (in shared memory) */
 } ImageBatch;
 
 void readMem(ImageBatch msg){
     // Attach to the shared memory segment
-    std::cout << msg.height << std::endl;
-    std::cout << msg.width << std::endl;
     std::cout << msg.shm_key << std::endl;
     std::cout << msg.batch_size << std::endl;
     int shmkey = shmget(msg.shm_key, 0, 0);
@@ -58,53 +54,42 @@ void readMem(ImageBatch msg){
     std::string time = std::to_string(std::time(0));
 
     // Read from shared memory
+    uint offset  = 0;
     for(int i = 0; i < msg.num_images; i++){
         // get the data for image i into image buffer
-        size_t header_size = 4;
-        size_t image_size = localDataSize-header_size;
-        unsigned char* image_data = new unsigned char[image_size];
-        unsigned int image_header = *((unsigned int*)&local_data[(i * localDataSize)]);
-        memcpy(image_data, (void*)(&local_data[(i * localDataSize)+header_size]), image_size);
+        unsigned int metadata_size = local_data[offset];
+        uchar* metadata_buffer = new uchar[metadata_size];
+        memcpy(metadata_buffer, &local_data[offset+sizeof(metadata_size)], metadata_size);
+        Metadata metadata;
 
-        std::cout << "Image recieved with header: " << image_header << std::endl;
-        std::cout << "Image height: " << msg.height << std::endl;
-        std::cout << "Image width: " << msg.width << std::endl;
-        std::cout << "Image size: " << image_size << std::endl;
-
-        // cv::Mat rawImage(msg.height, msg.width, CV_16UC1, image_data);
-        // rawImage *= 16; // scale image to use 16 bits
-        // cv::Mat demosaicedImage;
-        // cv::cvtColor(rawImage, demosaicedImage, cv::COLOR_BayerGR2BGR);
-
-        // // save to path
-        // fs::path dir ("./");
-        // fs::path file ("image_" + std::to_string(std::time(0)) + "_" + std::to_string(i) + ".png");
-        // std::string full_path = (dir / file).string();
-        // imwrite(full_path, demosaicedImage);
-        // delete[] image_data;
-
-        fs::path dir ("./");
-        fs::path file ("image_" + time + "_" + std::to_string(i) + "_12bit.bayerRG");
-        std::string full_path = (dir / file).string();
-        std::cout << full_path << std::endl;
-
-        // Open a file for binary writing
-        std::ofstream outFile(full_path, std::ios::out | std::ios::binary);
-
-        // Check if the file opened successfully
-        if (!outFile) {
-            std::cerr << "Error opening file for writing!" << std::endl;
+        if (!metadata.ParseFromArray(metadata_buffer, metadata_size)) {
+            std::cerr << "Failed to parse uchar array into message." << std::endl;
             return;
         }
 
-        // Write the raw data to the file
-        outFile.write(reinterpret_cast<char*>(image_data), localDataSize);
+        std::cout << "Image recieved with header: " << metadata_size << std::endl;
+        std::cout << "Image height: " << metadata.height() << std::endl;
+        std::cout << "Image width: " << metadata.width() << std::endl;
+        std::cout << "Image size: " << metadata.size() << std::endl;
+        std::cout << "Metadata size: " << metadata_size << std::endl;
 
-        // Close the file
-        outFile.close();
+        uchar* image_buffer = new uchar[metadata.size()];
+        memcpy(image_buffer, &local_data[offset+sizeof(metadata_size)+metadata_size], metadata.size());
+        offset+=sizeof(metadata_size)+metadata_size+metadata.size();
 
-        std::cout << "Binary data saved to file successfully." << std::endl;
-        delete[] image_data;
+        cv::Mat rawImage(metadata.height(), metadata.width(), CV_16UC1, image_buffer);
+        rawImage *= 16; // scale image to use 16 bits
+        cv::Mat demosaicedImage;
+        cv::cvtColor(rawImage, demosaicedImage, cv::COLOR_BayerGR2BGR);
+
+        // save to path
+        fs::path dir ("./");
+        fs::path file ("image_" + std::to_string(std::time(0)) + "_" + std::to_string(i) + ".png");
+        std::string full_path = (dir / file).string();
+        imwrite(full_path, demosaicedImage);
+
+        delete[] metadata_buffer;
+        delete[] image_buffer;
     }
 
     delete[] local_data;

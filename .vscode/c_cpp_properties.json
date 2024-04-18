@@ -7,6 +7,7 @@
                 "${workspaceFolder}/src/**",
                 "${workspaceFolder}/include/**",
                 "${workspaceFolder}/lib/param/include",
+                "${workspaceFolder}/lib/VimbaX_2023-4-Linux/api/include",
                 "${workspaceFolder}/include/utils",
                 "/usr/include/opencv4"
             ],

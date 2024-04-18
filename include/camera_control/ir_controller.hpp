@@ -4,11 +4,13 @@
 #include <vector>
 #include <opencv2/opencv.hpp>
 #include "camera_controller.hpp"
+#include "common.hpp"
 
 #define WIDTH 640
 #define HEIGHT 512
 #define BUFFERSIZE WIDTH * HEIGHT * sizeof(uint16_t)
-#define IR_BPP 16 // Bits per pixel in the raw output of Y16
+#define IR_BPP 16       // Bits per pixel in the raw output of Y16
+#define IR_CHANNELS 1  // number of channels on Y16 pixel format
 
 class IRController: public CameraController {
     private:

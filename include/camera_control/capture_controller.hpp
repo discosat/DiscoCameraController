@@ -9,6 +9,7 @@
 
 #include "camera_controller.hpp"
 #include "vimba_controller.hpp"
+#include "test_controller.hpp"
 #include "ir_controller.hpp"
 #include "common.hpp"
 #include "message_queue.hpp"
@@ -54,6 +55,10 @@ class CaptureController{
             
             case CameraType::IR:
                 return std::make_unique<IRController>();
+                break;
+
+            case CameraType::TEST:
+                return std::make_unique<TestController>();
                 break;
             
             case CameraType::Unkown:
@@ -119,6 +124,7 @@ class CaptureController{
     private:
         MessageQueue* mq;
 
+        uchar* createImageMessageData(std::vector<Image> &images, CaptureMessage capture_instructions, size_t &size);
         double calculateEntropy(Image image);
         size_t setExposure(CameraController *controller, CaptureMessage cap_msg);
 };

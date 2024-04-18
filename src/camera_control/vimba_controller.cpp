@@ -1,6 +1,8 @@
 #include "vimba_controller.hpp"
 #include <iostream>
 #include <stdexcept>
+#include <chrono>
+#include <thread>
 #include <VmbCPP/VmbCPP.h>
 #include "errors.hpp"
 #include "common.hpp"
@@ -62,31 +64,9 @@ bool VimbaController::turnOffCamera(VmbCPP::CameraPtr cam){
     }
 }
 
-bool VimbaController::setDelay(VmbCPP::CameraPtr cam, uint delay){
-    double hertz = ((double)1.0)/(((double)delay)/1000000);
-    
-    FeaturePtr acquisitionFrameRateEnable, acquisitionFrameRate;
-    VmbErrorType err = VmbErrorSuccess;
-
-    if ((err = cam->GetFeatureByName( "AcquisitionFrameRateEnable", acquisitionFrameRateEnable )) == VmbErrorSuccess ){
-        err = acquisitionFrameRateEnable->SetValue(true);
-
-        if(err == VmbErrorSuccess && 
-            (err = cam->GetFeatureByName( "AcquisitionFrameRate", acquisitionFrameRate )) == VmbErrorSuccess ){
-                err = acquisitionFrameRate->SetValue((float)hertz);
-                return VmbErrorSuccess == err;
-            }
-    }
-    return true;
-}
-
-FramePtrVector VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain, uint numFrames, uint delay){
+FramePtr VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain){
     if(!turnOnCamera(cam)){
         throw std::runtime_error("Could not turn on camera");
-    }
-
-    if(delay > 0){
-        setDelay(cam, delay);
     }
 
     FeaturePtr pFormatFeature;
@@ -113,14 +93,8 @@ FramePtrVector VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposu
         }
     }
 
-    FramePtrVector frames;
-
-    for(uint i = 0; i < numFrames; i++){
-        FramePtr frame;
-        frames.push_back(frame);
-    }
-
-    err = cam->AcquireMultipleImages(frames, 5000);
+    FramePtr frame;
+    err = cam->AcquireSingleImage(frame, 5000);
 
     if (err != VmbErrorSuccess)
     {
@@ -131,7 +105,7 @@ FramePtrVector VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposu
         std::cerr << "Could not turn off camera" << std::endl;
     }
 
-    return frames;
+    return frame;
 }
 
 std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions, u_int16_t* error) {
@@ -156,29 +130,26 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
 
     if(cam != NULL){
         cam->Open(VmbAccessModeExclusive);
-        float exposure = capture_instructions.Exposure;
-        VmbCPP::FramePtrVector frames;
-
-        try{
-            std::cout << "endl" << std::endl;
-            frames = this->aqcuireFrame(cam, exposure, capture_instructions.ISO, capture_instructions.NumberOfImages, capture_instructions.Interval);
-        } catch(const std::exception& e){
-            std::cout << "Error!" << std::endl;
-            *error = ERROR_CODE::CAPTURE_ERROR;
-            return images;
-        }
         
-        u_int width, height, bufferSize;
-        frames.at(0)->GetBufferSize(bufferSize);
-
-        bufferSize+=IMAGE_METADATA_SIZE;
-
-        frames.at(0)->GetWidth(width);
-        frames.at(0)->GetHeight(height);
-
         for(size_t i = 0; i < capture_instructions.NumberOfImages; i++){
+            VmbCPP::FramePtr frame;
+            size_t timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+            try{
+                frame = this->aqcuireFrame(cam, capture_instructions.Exposure, capture_instructions.ISO);
+            } catch(const std::exception& e){
+                std::cout << "Error!" << std::endl;
+                *error = ERROR_CODE::CAPTURE_ERROR;
+                return images;
+            }
+
+            u_int width, height, bufferSize;
+            frame->GetBufferSize(bufferSize);
+            frame->GetWidth(width);
+            frame->GetHeight(height);
+
             u_char* buffer;
-            frames.at(i)->GetImage(buffer);
+            frame->GetImage(buffer);
 
             Image img;
             img.size = bufferSize;
@@ -186,10 +157,17 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
             img.height = height;
             img.data = new u_char[bufferSize];
             img.bpp = VMB_BPP;
+            img.channels = VMB_CHANNELS;
+            img.timestamp = timestamp;
 
             std::memcpy(img.data, buffer, bufferSize * sizeof(u_char));
 
             images.push_back(img);
+
+            // delay if needed
+            if(i < capture_instructions.NumberOfImages - 1 && capture_instructions.Interval > 0){
+                std::this_thread::sleep_for(std::chrono::milliseconds(capture_instructions.Interval));
+            }
         }
 
         cam->Close();

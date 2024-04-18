@@ -3,9 +3,11 @@
 
 #include <VmbCPP/VmbCPP.h>
 #include <vector>
+#include "common.hpp"
 #include "camera_controller.hpp"
 
-#define VMB_BPP 12 // Bits per pixel in the raw output of BayerRG
+#define VMB_BPP 12      // Bits per pixel in the raw output of BayerRG
+#define VMB_CHANNELS 1  // number of channels on BayerRG pixel format
 
 class VimbaController: public CameraController {
     private:
@@ -13,10 +15,9 @@ class VimbaController: public CameraController {
         std::vector<VmbCPP::CameraPtr> cameras;
 
         std::vector<VmbCPP::CameraPtr> getCameras();
-        VmbCPP::FramePtrVector aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain, uint numFrames, uint delay);
+        VmbCPP::FramePtr aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain);
         bool turnOnCamera(VmbCPP::CameraPtr cam);
         bool turnOffCamera(VmbCPP::CameraPtr cam);
-        bool setDelay(VmbCPP::CameraPtr cam, uint delay);
 
     public:
         VimbaController();
