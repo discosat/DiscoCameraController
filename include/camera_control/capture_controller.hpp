@@ -12,6 +12,7 @@
 #include "test_controller.hpp"
 #include "ir_controller.hpp"
 #include "common.hpp"
+#include "errors.hpp"
 #include "message_queue.hpp"
 
 // capture parameters defaults
@@ -40,9 +41,18 @@ class CaptureController{
             if (obj){
                 std::string input(capture_instructions);
                 std::cout << capture_instructions << std::endl;
+                if(input.size() == 0){
+                    *error = ERROR_CODE::PARSING_ERROR_MESSAGE_EMPTY;
+                    return;
+                }
+
                 CaptureMessage msg = ParseMessage(input);
 
-                static_cast<CaptureController*>(obj)->Capture(msg, error);
+                try{
+                    static_cast<CaptureController*>(obj)->Capture(msg, error);
+                } catch(std::exception const&){
+                    *error = ERROR_CODE::CAPTURE_ERROR;
+                }
             }
         }
 

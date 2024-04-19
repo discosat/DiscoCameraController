@@ -9,6 +9,7 @@ typedef enum ERROR_CODE
     PARSING_ERROR_CAMERA_TYPE_INVALID = 101,        // Invalid camera type or camera type implementation missing
     PARSING_ERROR_CAMERA_ID_MISSING = 102,          // Camera id is missing from capture instructions
     PARSING_ERROR_NUM_IMAGES_INVALID = 103,         // Number of images to capture is 0
+    PARSING_ERROR_MESSAGE_EMPTY = 104,              // Number of images to capture is 0
 
     CAPTURE_ERROR = 200,                            // General error during image capture
     CAPTURE_ERROR_NO_CAMERAS = 201,                 // No cameras connected

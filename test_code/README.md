@@ -1,7 +1,7 @@
 g++ -std=c++17 -o receiver receiver.cpp ../src/message_queue/metadata.pb.cpp \
-    -I/usr/include/protobuf/ \
+    -I/usr/include/google/protobuf/ \
     -I../include/message_queue/ \
-    /usr/lib/x86_64-linux-gnu/libprotobuf.so \
+    /usr/local/lib/libprotobuf.so.30 \
     -lrt `pkg-config --cflags --libs opencv4`
 
 

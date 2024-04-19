@@ -68,6 +68,9 @@ Arguments:
                  Default: 10
   -n NODE        CSP node address.
                  Default: 2
+Optional:
+  -D             Debug option used during experiments
+  -M MESSAGE     Debug message to simulate a CSP param callback
 )""";
 
     std::cout << help << std::endl;
@@ -81,6 +84,9 @@ int main(int argc, char *argv[], char *envp[]){
         print_usage();
         return 0;
     }
+
+    bool debug = has_option(args, "-D");
+    const std::string_view debug_message_arg = get_option(args, "-M");
     
     const std::string_view interface_arg = get_option(args, "-i");
     const std::string_view device_arg = get_option(args, "-d");
@@ -105,14 +111,21 @@ int main(int argc, char *argv[], char *envp[]){
         interface = std::string(interface_arg);
     }
 
-    CSPInterface interfaceConfig;
-    interfaceConfig.Interface = StringToCSPInterface(interface.c_str());
-    interfaceConfig.Device = device.c_str();
-    interfaceConfig.Node = node;
-    interfaceConfig.Port = port;
-
     CaptureController* captureController = new CaptureController();
-    server_start(&interfaceConfig, captureController->CaptureCallback, (void*)captureController);
+
+    if(!debug){
+        CSPInterface interfaceConfig;
+        interfaceConfig.Interface = StringToCSPInterface(interface.c_str());
+        interfaceConfig.Device = device.c_str();
+        interfaceConfig.Node = node;
+        interfaceConfig.Port = port;
+
+        server_start(&interfaceConfig, captureController->CaptureCallback, (void*)captureController);
+    } else {
+        std::string debug_message = std::string(debug_message_arg);
+        u_int16_t error = 0;
+        captureController->CaptureCallback(debug_message.data(), captureController, &error);
+    }
 
     delete captureController;
     return 0;
