@@ -50,9 +50,6 @@ dirs += include_directories(
     'include/communication',
 )
 
-proto_dep_include_dir = join_paths(get_option('prefix'), '/include', 'google', 'protobuf')
-dirs += include_directories(proto_dep_include_dir)
-
 if meson.is_cross_build()
     message('Compiling for aarch64')
     vmb_dep = cpp.find_library('VmbCPP', dirs: join_paths(meson.source_root(),'lib/VimbaX_2023-4-ARM64/api/lib'))
