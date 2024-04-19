@@ -1,8 +1,17 @@
 # Camera Controller
 [The Disco-2 camera controller](https://github.com/ivaroli/DiscoCameraController) is a controller that controls the visible and IR light cameras onboard the Disco-2 payload. It's purpose is to fetch raw image data from the camera sensors and pass them to the image processing pipeline (DIPP). It interfaces with the processing pipeline over System V message queue and shared memory, and it exposes a parameter with libparam over CSP that allows sending of image capture instructions.
 
-## Overview
+## Building
+### Protobuf
+The camera controller depends on Protobuf from google, version 3.5. To install this specific version, clone the following and follow the instructions in the README.md in the repo
 
+```
+git clone -b 3.5.x git@github.com:protocolbuffers/protobuf.git
+```
+
+### Protobuf
+
+## Overview
 ### Image data
 When the camera captures an image from the visible light cameras, the controller captures the raw **BayerRG** data from the camera sensor. The controller then packages the data into a `unsigned char *data` array. It also prepends a 4 byte integer in front of the image data, indicating the size of the image. A diagram representing the data generated from a single image is below:
 
