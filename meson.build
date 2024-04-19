@@ -37,10 +37,10 @@ cpp = meson.get_compiler('cpp')
 
 csp_dep = dependency('csp', fallback: ['csp', 'csp_dep'])
 param_dep = dependency('param', fallback: ['param', 'param_dep'])
-proto_c_dep = dependency('protobuf', fallback: ['libprotobuf', 'proto_c_dep'])
+proto_dep = dependency('protobuf', fallback: ['libprotobuf', 'proto_c_dep'])
 opencv_dep = dependency('opencv4')
 
-deps = [csp_dep,param_dep,opencv_dep,proto_c_dep]
+deps = [csp_dep,param_dep,opencv_dep,proto_dep]
 
 dirs = []
 dirs += include_directories(
@@ -49,6 +49,9 @@ dirs += include_directories(
     'include/camera_control', 
     'include/communication',
 )
+
+proto_dep_include_dir = join_paths(get_option('prefix'), '../include', 'google', 'protobuf')
+dirs += include_directories(proto_dep_include_dir)
 
 if meson.is_cross_build()
     message('Compiling for aarch64')
