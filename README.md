@@ -3,10 +3,10 @@
 
 ## Building
 ### Protobuf
-The camera controller depends on Protobuf from google, version 3.5. To install this specific version, clone the following and follow the instructions in the README.md in the repo
+The camera controller depends on Protobuf from google, version 3.19. To install this specific version, clone the following and follow the instructions in the README.md in the repo
 
 ```
-git clone -b 3.5.x git@github.com:protocolbuffers/protobuf.git
+git clone -b 3.19.x git@github.com:protocolbuffers/protobuf.git
 ```
 
 ### Protobuf
