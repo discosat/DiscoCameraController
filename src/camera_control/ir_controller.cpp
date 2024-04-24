@@ -36,10 +36,12 @@ u_char* IRController::captureFrame(cv::VideoCapture &cap){
 
 std::vector<Image> IRController::Capture(CaptureMessage& capture_instructions, u_int16_t* error){
     std::vector<Image> images;
-    std::string camera_name = "/dev/v4l/by-id/usb-FLIR_Boson_267763-video-index0";
+    //std::string camera_name = "/dev/serial/by-id/usb-FLIR_Boson_267763-if02";
 
     cv::VideoCapture cap;
-    if (!openCamera(cap, camera_name)){
+    if (!openCamera(cap, capture_instructions.CameraId)){
+        std::cerr << "Unable to open IR camera" << std::endl;
+        return images;
     }
 
     for(size_t i = 0; i < capture_instructions.NumberOfImages; i++){

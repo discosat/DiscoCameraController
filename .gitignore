@@ -1,5 +1,6 @@
 build/*
 *.vmem
+*.csv
 test_code/
 
 !test_code/csp_client.cpp
