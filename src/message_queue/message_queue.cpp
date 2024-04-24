@@ -76,6 +76,7 @@ bool MessageQueue::SendImage(ImageBatch batch, u_int16_t* error){
     batch.shm_key  = memspaceKey;
 
     if(addr != NULL && sendMessage(batch) && (shmdt(addr)) != -1){
+        shmdt(addr);
         return true;
     } else {
         // cleanup

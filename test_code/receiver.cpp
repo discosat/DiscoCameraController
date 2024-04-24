@@ -80,13 +80,13 @@ void readMem(ImageBatch msg){
         cv::Mat rawImage(metadata.height(), metadata.width(), CV_16UC1, image_buffer);
         rawImage *= 16; // scale image to use 16 bits
         cv::Mat demosaicedImage;
-        cv::cvtColor(rawImage, demosaicedImage, cv::COLOR_BayerGR2BGR);
+        cv::cvtColor(rawImage, demosaicedImage, cv::COLOR_BayerRG2BGR);
 
-        // save to path
-        fs::path dir ("./");
-        fs::path file ("image_" + std::to_string(std::time(0)) + "_" + std::to_string(i) + ".png");
-        std::string full_path = (dir / file).string();
-        imwrite(full_path, demosaicedImage);
+        // // save to path
+        // fs::path dir ("./");
+        // fs::path file ("image_" + std::to_string(std::time(0)) + "_" + std::to_string(i) + ".png");
+        // std::string full_path = (dir / file).string();
+        // imwrite(full_path, demosaicedImage);
 
         delete[] metadata_buffer;
         delete[] image_buffer;
