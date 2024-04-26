@@ -36,7 +36,8 @@ u_char* IRController::captureFrame(cv::VideoCapture &cap){
 
 std::vector<Image> IRController::Capture(CaptureMessage& capture_instructions, u_int16_t* error){
     std::vector<Image> images;
-    //std::string camera_name = "/dev/serial/by-id/usb-FLIR_Boson_267763-if02";
+    std::string camera_name = capture_instructions.CameraId.size() == 0?
+        IR_CAMERA_DEFAULT_ID:capture_instructions.CameraId;
 
     cv::VideoCapture cap;
     if (!openCamera(cap, capture_instructions.CameraId)){
