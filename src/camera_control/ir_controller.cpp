@@ -56,6 +56,9 @@ std::vector<Image> IRController::Capture(CaptureMessage& capture_instructions, u
         images.push_back(img);
     }
 
+
     closeCamera(cap);
+
+    std::cout << "Captured IR frames" << std::endl; 
     return images;
 }
