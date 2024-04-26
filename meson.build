@@ -68,3 +68,15 @@ executable('Disco2CameraControl', sources,
     install : true,
     link_args : ['-Wl,--export-dynamic', '-ldl'],
 )
+
+# Test code
+sources_tst = files([
+    'test_code/receiver.cpp'
+])
+
+executable('reciever', sources_tst,
+    include_directories : dirs,
+    dependencies : deps,
+    install : true,
+    link_args : ['-Wl,--export-dynamic', '-ldl'],
+)
