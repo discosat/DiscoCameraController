@@ -91,6 +91,7 @@ void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* 
     auto images = controller->Capture(capture_instructions, error);
 
     if(*error != ERROR_CODE::SUCCESS){
+        std::cerr << "Error code: " << *error << std::endl;
         return;
     }
 
