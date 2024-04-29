@@ -19,7 +19,6 @@ bool IRController::openCamera(cv::VideoCapture &cap,std::string port_name){
 }
 
 void IRController::closeCamera(cv::VideoCapture &cap){
-    cv::destroyAllWindows();
     cap.release();
 }
 
@@ -62,6 +61,7 @@ std::vector<Image> IRController::Capture(CaptureMessage& capture_instructions, u
     }
 
 
+    std::cout << "bing bong" << std::endl;
     closeCamera(cap);
 
     std::cout << "Captured IR frames" << std::endl; 
