@@ -2,8 +2,13 @@
 [The Disco-2 camera controller](https://github.com/ivaroli/DiscoCameraController) is a controller that controls the visible and IR light cameras onboard the Disco-2 payload. It's purpose is to fetch raw image data from the camera sensors and pass them to the image processing pipeline (DIPP). It interfaces with the processing pipeline over System V message queue and shared memory, and it exposes a parameter with libparam over CSP that allows sending of image capture instructions.
 
 ## Building
+### Prerequisites
+```
+sudo apt-get install libzmq3-dev libbsd
+```
+
 ### Protobuf
-The camera controller depends on Protobuf from google, version 3.19. To install this specific version, clone the following and follow the instructions in the README.md in the repo
+The camera controller depends on Protobuf from google, version 3.19. To install this specific version, clone the following and follow the instructions in the `src/README.md` in the repo
 
 ```
 git clone -b 3.19.x git@github.com:protocolbuffers/protobuf.git
