@@ -26,6 +26,7 @@ void IRController::closeCamera(cv::VideoCapture &cap){
 u_char* IRController::captureFrame(cv::VideoCapture &cap){
     cv::Mat frame;
     if (cap.read(frame)) {
+        std::cout << BUFFERSIZE << std::endl;
         u_char* out_array = new u_char[BUFFERSIZE];
         memcpy(out_array, (u_char*)frame.data, BUFFERSIZE);
         return out_array;
