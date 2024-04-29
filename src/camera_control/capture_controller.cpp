@@ -75,17 +75,12 @@ void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* 
     std::cout  << "\tNumber of images: " << capture_instructions.NumberOfImages << std::endl;
     std::cout  << "\tPipeline id: " << capture_instructions.PipelineId << std::endl;
     
-    std::cout << "1" << std::endl;
     std::unique_ptr<CameraController> controller = CaptureController::CreateControllerInstance(capture_instructions.Type);
 
-    std::cout << "2" << std::endl;
     if(controller == nullptr){
-        std::cout << "3" << std::endl;
         *error = ERROR_CODE::PARSING_ERROR_CAMERA_TYPE_INVALID;
         return;
     }
-
-    std::cout << "4" << std::endl;
 
     if(capture_instructions.Exposure == 0){
         std::cout << "Finding exposure" << std::endl;
@@ -93,31 +88,21 @@ void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* 
         std::cout << "Found exposure: " << capture_instructions.Exposure << std::endl;
     }
 
-    std::cout << "5" << std::endl;
-
     auto images = controller->Capture(capture_instructions, error);
-
-    std::cout << "6" << std::endl;
 
     if(*error != ERROR_CODE::SUCCESS){
         std::cerr << "Error code: " << *error << std::endl;
         return;
     }
 
-    std::cout << "7" << std::endl;
-
     size_t size = 0;
     unsigned char* total_buffer = this->createImageMessageData(images, capture_instructions, size);
-
-    std::cout << "8" << std::endl;
 
     ImageBatch batch;
     batch.pipeline_id = capture_instructions.PipelineId;
     batch.num_images = capture_instructions.NumberOfImages;
     batch.batch_size = size;
     batch.data = total_buffer;
-
-    std::cout << "9" << std::endl;
 
     if(mq->SendImage(batch, error)){
         std::cout << "Sending image was successful" << std::endl;

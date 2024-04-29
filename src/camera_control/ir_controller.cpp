@@ -25,10 +25,8 @@ void IRController::closeCamera(cv::VideoCapture &cap){
 u_char* IRController::captureFrame(cv::VideoCapture &cap){
     cv::Mat frame;
     if (cap.read(frame)) {
-        std::cout << BUFFERSIZE << " " << frame.total() * frame.elemSize() << std::endl;
-        size_t bufferSize = frame.total() * frame.elemSize();
-        uchar* out_array = new uchar[bufferSize];
-        std::memcpy(out_array, frame.data, bufferSize);
+        uchar* out_array = new uchar[BUFFERSIZE];
+        std::memcpy(out_array, frame.data, BUFFERSIZE);
         return out_array;
     } else {
         return nullptr;
@@ -46,10 +44,7 @@ std::vector<Image> IRController::Capture(CaptureMessage& capture_instructions, u
         return images;
     }
 
-    std::cerr << "Opened IR camera" << std::endl;
-
     for(size_t i = 0; i < capture_instructions.NumberOfImages; i++){
-        std::cerr << "Capturing IR image" << std::endl;
         Image img;
         img.size = BUFFERSIZE;
         img.width = WIDTH;
@@ -60,10 +55,6 @@ std::vector<Image> IRController::Capture(CaptureMessage& capture_instructions, u
         images.push_back(img);
     }
 
-
-    std::cout << "bing bong" << std::endl;
     closeCamera(cap);
-
-    std::cout << "Captured IR frames" << std::endl; 
     return images;
 }

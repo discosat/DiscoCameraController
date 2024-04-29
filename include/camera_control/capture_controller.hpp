@@ -40,7 +40,6 @@ class CaptureController{
         static void CaptureCallback(char* capture_instructions, void* obj, u_int16_t* error) {
             if (obj){
                 std::string input(capture_instructions);
-                std::cout << capture_instructions << std::endl;
                 if(input.size() == 0){
                     *error = ERROR_CODE::PARSING_ERROR_MESSAGE_EMPTY;
                     return;

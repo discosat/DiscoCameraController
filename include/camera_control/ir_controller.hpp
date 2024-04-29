@@ -11,7 +11,7 @@
 #define BUFFERSIZE WIDTH * HEIGHT * sizeof(uint16_t)
 #define IR_BPP 16       // Bits per pixel in the raw output of Y16
 #define IR_CHANNELS 1  // number of channels on Y16 pixel format
-#define IR_CAMERA_DEFAULT_ID "/dev/serial/by-id/usb-FLIR_Boson_267763-if02"
+#define IR_CAMERA_DEFAULT_ID "/dev/v4l/by-id/usb-FLIR_Boson_267763-video-index0"
 
 class IRController: public CameraController {
     private:

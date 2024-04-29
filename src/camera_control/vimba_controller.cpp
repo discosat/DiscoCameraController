@@ -44,7 +44,6 @@ bool VimbaController::turnOnCamera(VmbCPP::CameraPtr cam){
 
     if ( VmbErrorSuccess == err ){
         err = powerSavingFeature->SetValue("Disabled");
-        std::cout << err << std::endl;
         return VmbErrorSuccess == err;
     } else {
         std::cout << err << std::endl;
