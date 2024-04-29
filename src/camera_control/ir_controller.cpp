@@ -45,7 +45,10 @@ std::vector<Image> IRController::Capture(CaptureMessage& capture_instructions, u
         return images;
     }
 
+    std::cerr << "Opened IR camera" << std::endl;
+
     for(size_t i = 0; i < capture_instructions.NumberOfImages; i++){
+        std::cerr << "Capturing IR image" << std::endl;
         Image img;
         img.size = BUFFERSIZE;
         img.width = WIDTH;
