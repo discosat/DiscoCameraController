@@ -122,6 +122,7 @@ int main(int argc, char *argv[], char *envp[]){
 
         server_start(&interfaceConfig, captureController->CaptureCallback, (void*)captureController);
     } else {
+        std::cout << "Testing camera controller..." << std::endl;
         std::string debug_message = std::string(debug_message_arg);
         u_int16_t error = 0;
         captureController->CaptureCallback(debug_message.data(), captureController, &error);

@@ -96,6 +96,7 @@ void readMem(ImageBatch msg){
 }
 
 int main() {
+    std::cout << "Simulator pipeline started" << std::endl;
     int msgQueueId;
     ImageBatch message;
 
