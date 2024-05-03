@@ -91,3 +91,43 @@ The camera controller provides an integer parameter via the CSP parameter named 
 | 300        | General error in message queue                            |
 | 301        | Unable to create shared memory space                      |
 | 302        | Unable to insert data into memory space                   |
+
+
+# TODO
+[X] Replace the lists with tables (hardware overview)
+
+[X] Replace Figure with Fig
+
+[] Check equation reference format, Equation (X) -> Eq. (X)
+
+[X] Replace * with \times in equations
+
+[X] in inline equations use / instead of \frac
+
+[X] Replace the noise images with a 2x2 grind and not a line
+
+[ ] Provide mathimatical proof of why merging images together reduces noise with regards to image noise
+
+[X] Use the Malvar for XXX
+
+[X] Format large numbers (powers) and also provide the calculation
+
+[ ] Optimizing exposure section to a subsection
+
+[X] Explain camera hardware values
+
+[ ] Explain all of the parts of all equations and make sure that every parameters
+
+[X] Differatiate between convolution and multiplication
+
+[X] Italics in equations usually reprisent variables, log should not be italic
+
+[ ] Provide a better analysis on why 20 stacked images have a worse quality
+
+[ ] Stack and subtract denoised images from the original one with and without noise. The resulting noise should give clues on where the added noise comes from.
+
+[ ] Move subcaption of images into the caption, where multiple images are togeather
+
+[X] Specify what version of ARM is used (coretex)
+
+[ ] SIFT/SURF to show where overlaps stop in merging

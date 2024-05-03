@@ -92,6 +92,9 @@ void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* 
 
     if(*error != ERROR_CODE::SUCCESS){
         std::cerr << "Error code: " << *error << std::endl;
+        for (size_t i = 0; i < images.size(); i++){
+            delete[] images.at(i).data;
+        }
         return;
     }
 
