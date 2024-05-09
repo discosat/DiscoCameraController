@@ -98,7 +98,7 @@ The camera controller provides an integer parameter via the CSP parameter named 
 
 [X] Replace Figure with Fig
 
-[] Check equation reference format, Equation (X) -> Eq. (X)
+[X] Check equation reference format, Equation (X) -> Eq. (X)
 
 [X] Replace * with \times in equations
 
@@ -126,8 +126,6 @@ The camera controller provides an integer parameter via the CSP parameter named 
 
 [ ] Stack and subtract denoised images from the original one with and without noise. The resulting noise should give clues on where the added noise comes from.
 
-[ ] Move subcaption of images into the caption, where multiple images are togeather
+[X] Move subcaption of images into the caption, where multiple images are togeather
 
 [X] Specify what version of ARM is used (coretex)
-
-[ ] SIFT/SURF to show where overlaps stop in merging

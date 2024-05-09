@@ -71,6 +71,7 @@ executable('Disco2CameraControl', sources,
 
 # Test code
 sources_tst = files([
+    'src/message_queue/metadata.pb.cpp',
     'test_code/receiver.cpp'
 ])
 
