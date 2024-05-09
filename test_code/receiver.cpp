@@ -50,7 +50,7 @@ void readMem(ImageBatch msg){
     }
 
     // // Detach from the shared memory segment !VERY IMPORTANT!
-    // shmctl(shmkey, IPC_RMID, nullptr);
+    shmctl(shmkey, IPC_RMID, nullptr);
     // std::string time = std::to_string(std::time(0));
 
     // // Read from shared memory
