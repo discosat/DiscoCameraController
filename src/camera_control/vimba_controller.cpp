@@ -73,7 +73,11 @@ FramePtr VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, fl
     
     if ( VmbErrorSuccess == err )
     {
-        err = pFormatFeature->SetValue( VmbPixelFormatBayerGR12 );
+        err = pFormatFeature->SetValue( VmbPixelFormatBayerRG12 );
+        if ( VmbErrorSuccess != err ) {
+            pFormatFeature->SetValue( VmbPixelFormatBayerGR12 );
+        }
+        
         FeaturePtr pExposureFeature, pGainFeature;
         
         err = cam->GetFeatureByName("ExposureTimeAbs", pExposureFeature);
