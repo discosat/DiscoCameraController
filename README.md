@@ -20,11 +20,11 @@ git clone -b 3.19.x git@github.com:protocolbuffers/protobuf.git
 ### Image data
 When the camera captures an image from the visible light cameras, the controller captures the raw **BayerRG** data from the camera sensor. The controller then packages the data into a `unsigned char *data` array. It also prepends a 4 byte integer in front of the image data, indicating the size of the image. A diagram representing the data generated from a single image is below:
 
-![Data reprisentation of a single image](doc/image_data_content.drawio.png)
+![Data representation of a single image](doc/image_data_content.drawio.png)
 
 The camera can also capture a burst of images. This burst of images will be packaged together into a single batch that will be sent to the image processing pipeline.
 
-![Data reprisentation of a burst of images](doc/image_batch.drawio.png)
+![Data representation of a burst of images](doc/image_batch.drawio.png)
 
 The image processing pipeline and the camera communicate using [System V Shared Memory](https://docs.oracle.com/cd/E19683-01/816-5042/svipc-41256/index.html) and a [System V Message Queue](https://docs.oracle.com/cd/E19683-01/816-5042/svipc-23310/index.html). When the camera captures a burst of images, it generates a shared memory segment and inserts the image data into it. Afterwards, the camera controller sends a System V message queue message to the image processing pipeline to signal that the images are ready for processing. Upon receiving this message, the processing pipeline retrieves the images from the shared memory segment before deallocating it. The message queue message is structured as a defined struct, as shown below.
 
@@ -44,7 +44,7 @@ typedef struct ImageBatch {
 
 Below is a sequence diagram illustrating the entire process of capturing images and delivering them to the processing pipeline:
 
-![Sequecne diagram of capturing images and delivering them to the processing pipeline](doc/camera_sequence_diagram.drawio.png)
+![Sequence diagram of capturing images and delivering them to the processing pipeline](doc/camera_sequence_diagram.drawio.png)
 
 ### Visible light sensor data
 The camera controller captures raw data from the visible light image sensors in a BayerRG format with a 12-bit pixel depth. In this format, every two bytes in the image data represent a single R, G, or B pixel. This approach is taken to grant the image processing pipeline greater control over image processing. Below is a visual representation of the BayerRG pixel format.
@@ -93,39 +93,3 @@ The camera controller provides an integer parameter via the CSP parameter named 
 | 302        | Unable to insert data into memory space                   |
 
 
-# TODO
-[X] Replace the lists with tables (hardware overview)
-
-[X] Replace Figure with Fig
-
-[X] Check equation reference format, Equation (X) -> Eq. (X)
-
-[X] Replace * with \times in equations
-
-[X] in inline equations use / instead of \frac
-
-[X] Replace the noise images with a 2x2 grind and not a line
-
-[ ] Provide mathimatical proof of why merging images together reduces noise with regards to image noise
-
-[X] Use the Malvar for XXX
-
-[X] Format large numbers (powers) and also provide the calculation
-
-[ ] Optimizing exposure section to a subsection
-
-[X] Explain camera hardware values
-
-[ ] Explain all of the parts of all equations and make sure that every parameters
-
-[X] Differatiate between convolution and multiplication
-
-[X] Italics in equations usually reprisent variables, log should not be italic
-
-[ ] Provide a better analysis on why 20 stacked images have a worse quality
-
-[ ] Stack and subtract denoised images from the original one with and without noise. The resulting noise should give clues on where the added noise comes from.
-
-[X] Move subcaption of images into the caption, where multiple images are togeather
-
-[X] Specify what version of ARM is used (coretex)
