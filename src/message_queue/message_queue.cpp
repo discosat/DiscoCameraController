@@ -73,7 +73,7 @@ bool MessageQueue::SendImage(ImageBatch batch, u_int16_t* error){
     addr = insertMemory(batch.data, batch.batch_size, memspace);
 
     batch.mtype = 1;
-    batch.shm_key  = memspaceKey;
+    batch.shmid  = memspace;
 
     if(addr != NULL && sendMessage(batch) && (shmdt(addr)) != -1){
         shmdt(addr);

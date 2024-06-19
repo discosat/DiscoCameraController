@@ -9,20 +9,10 @@ typedef struct ImageBatch {
     long mtype;          /* message type to read from the message queue */
     int num_images;      /* amount of images */
     int batch_size;      /* size of the image batch */
-    int shm_key;         /* key to shared memory segment of image data */
+    int shmid;         /* key to shared memory segment of image data */
     int pipeline_id;     /* id of pipeline to utilize for processing */
     u_char *data; /* address to image data (in shared memory) */
 } ImageBatch;
-
-typedef struct ImageBatchMessage {
-    long mtype;
-    u_int height;
-    u_int width;
-    u_int channels;
-    u_int num_images;
-    u_int batch_size;
-    int shm_key;
-} ImageBatchMessage;
 
 typedef struct Image {
     size_t height;
