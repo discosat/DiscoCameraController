@@ -92,7 +92,7 @@ static void iface_init(CSPInterface *interfaceConfig) {
         break;
     case CAN:
 	    error = csp_can_socketcan_open_and_add_interface(interfaceConfig->Device, CSP_IF_CAN_DEFAULT_NAME, 
-														interfaceConfig->Node, 1000000, true, &default_iface);
+														interfaceConfig->Node, 1000000, 0, &default_iface);
         default_iface->name = "can";
         break;
     case KISS:
