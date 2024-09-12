@@ -17,6 +17,8 @@
 #include <csp/interfaces/csp_if_can.h>
 #include <csp/interfaces/csp_if_kiss.h>
 #include <csp/drivers/usart.h>
+#include <csp/drivers/can_socketcan.h>
+#include <csp/drivers/usart.h>
 #include <sys/types.h>
 #include <errors.hpp>
 
@@ -91,9 +93,8 @@ static void iface_init(CSPInterface *interfaceConfig) {
         default_iface->name = "zmq";
         break;
     case CAN:
-	    error = csp_can_socketcan_open_and_add_interface(interfaceConfig->Device, CSP_IF_CAN_DEFAULT_NAME, 
-														interfaceConfig->Node, 1000000, 0, &default_iface);
-        default_iface->name = "can";
+	    error = csp_can_socketcan_open_and_add_interface(interfaceConfig->Device, "CAN", interfaceConfig->Node, 1000000, 0, &iface);
+            default_iface->name = "CAN";
         break;
     case KISS:
         csp_usart_conf_t conf = {
