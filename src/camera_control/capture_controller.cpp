@@ -29,6 +29,7 @@ uchar* CaptureController::createImageMessageData(std::vector<Image> &images, Cap
         metadata.set_height(images.at(i).height);
         metadata.set_size(images.at(i).size);
         metadata.set_camera(capture_instructions.CameraId);
+        metadata.set_obid(capture_instructions.OBID);
 
         uint metadataSize = (uint)metadata.ByteSizeLong();
         uchar* metadataBuffer = new uchar[metadataSize];

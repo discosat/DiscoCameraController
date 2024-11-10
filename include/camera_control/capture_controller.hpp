@@ -89,6 +89,7 @@ class CaptureController{
             message.CameraId = "";
             message.Type = CAMERA_TYPE_DEFAULT;
             message.PipelineId = PIPELINE_ID_DEFAULT;
+            message.OBID = 0;
 
             std::vector<std::string> pairs;
             std::stringstream ss(input);
@@ -123,6 +124,8 @@ class CaptureController{
                     message.Type = StringToCameraType(value);
                 } else if (variable == "PIPELINE_ID") {
                     message.PipelineId = std::stoi(value);
+                } else if (variable == "OBID") {
+                    message.OBID == std::stoi(value);
                 } else {
                     continue;
                 }

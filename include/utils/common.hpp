@@ -39,6 +39,7 @@ typedef struct CaptureMessage {
     float ISO;              // Gain/ISO
     u_int Interval;         // delay in microseconds
     u_int PipelineId;       // Pipeline to use
+    u_int OBID;             // image batch unique identifier
 } CaptureMessage;
 
 // how many bytes in the beginning of the image buffer is allocated for metadata, which is just the size of the image
