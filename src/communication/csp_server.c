@@ -92,10 +92,10 @@ static void iface_init(CSPInterface *interfaceConfig) {
         error = csp_zmqhub_init_filter2("zmq", interfaceConfig->Device, interfaceConfig->Node, 8, true, &default_iface, NULL, CSP_ZMQPROXY_SUBSCRIBE_PORT, CSP_ZMQPROXY_PUBLISH_PORT);
         default_iface->name = "zmq";
         break;
-    case CAN:
-	    error = csp_can_socketcan_open_and_add_interface(interfaceConfig->Device, "CAN", interfaceConfig->Node, 1000000, 0, &iface);
-            default_iface->name = "CAN";
-        break;
+    // case CAN:
+	//     error = csp_can_socketcan_open_and_add_interface(interfaceConfig->Device, "CAN", interfaceConfig->Node, 1000000, 0, &iface);
+    //     default_iface->name = "CAN";
+    //     break;
     case KISS:
         csp_usart_conf_t conf = {
             .device = interfaceConfig->Device,
@@ -104,7 +104,7 @@ static void iface_init(CSPInterface *interfaceConfig) {
             .stopbits = 1,
             .paritysetting = 0,
         };
-        error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME,  &default_iface);
+        error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME, 0,  &default_iface); // ADDR set to zero for now, what should addr be???
         default_iface->addr = interfaceConfig->Node;
         default_iface->name = "kiss";
         break;

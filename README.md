@@ -36,6 +36,7 @@ typedef struct ImageBatch {
     int batch_size;      /* size of the entire image batch of data */
     int shm_key;         /* key to shared memory segment of image data */
     int pipeline_id;     /* id of pipeline to utilize for processing */
+    int obid;		 /* uid associated with image batch */
     unsigned char *data; /* address to image data (in shared memory) */
 } ImageBatch;
 ```

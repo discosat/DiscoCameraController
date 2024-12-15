@@ -38,7 +38,8 @@ constexpr Metadata::Metadata(
   , width_(0)
   , channels_(0)
   , timestamp_(0)
-  , bits_pixel_(0){}
+  , bits_pixel_(0)
+  , obid_(0){}
 struct MetadataDefaultTypeInternal {
   constexpr MetadataDefaultTypeInternal()
     : _instance(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized{}) {}
@@ -77,6 +78,7 @@ const uint32_t TableStruct_metadata_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE
   PROTOBUF_FIELD_OFFSET(::Metadata, channels_),
   PROTOBUF_FIELD_OFFSET(::Metadata, timestamp_),
   PROTOBUF_FIELD_OFFSET(::Metadata, bits_pixel_),
+  PROTOBUF_FIELD_OFFSET(::Metadata, obid_),
   PROTOBUF_FIELD_OFFSET(::Metadata, camera_),
   PROTOBUF_FIELD_OFFSET(::Metadata, items_),
 };
@@ -94,15 +96,16 @@ const char descriptor_table_protodef_metadata_2eproto[] PROTOBUF_SECTION_VARIABL
   "\n\016metadata.proto\"~\n\014MetadataItem\022\013\n\003key\030"
   "\001 \001(\t\022\024\n\nbool_value\030\002 \001(\010H\000\022\023\n\tint_value"
   "\030\003 \001(\005H\000\022\025\n\013float_value\030\004 \001(\002H\000\022\026\n\014strin"
-  "g_value\030\005 \001(\tH\000B\007\n\005value\"\236\001\n\010Metadata\022\014\n"
+  "g_value\030\005 \001(\tH\000B\007\n\005value\"\254\001\n\010Metadata\022\014\n"
   "\004size\030\001 \001(\005\022\016\n\006height\030\002 \001(\005\022\r\n\005width\030\003 \001"
   "(\005\022\020\n\010channels\030\004 \001(\005\022\021\n\ttimestamp\030\005 \001(\005\022"
-  "\022\n\nbits_pixel\030\006 \001(\005\022\016\n\006camera\030\007 \001(\t\022\034\n\005i"
-  "tems\030\010 \003(\0132\r.MetadataItemb\006proto3"
+  "\022\n\nbits_pixel\030\006 \001(\005\022\014\n\004obid\030\007 \001(\005\022\016\n\006cam"
+  "era\030\010 \001(\t\022\034\n\005items\030\t \003(\0132\r.MetadataItemb"
+  "\006proto3"
   ;
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_metadata_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_metadata_2eproto = {
-  false, false, 313, descriptor_table_protodef_metadata_2eproto, "metadata.proto", 
+  false, false, 327, descriptor_table_protodef_metadata_2eproto, "metadata.proto", 
   &descriptor_table_metadata_2eproto_once, nullptr, 0, 2,
   schemas, file_default_instances, TableStruct_metadata_2eproto::offsets,
   file_level_metadata_metadata_2eproto, file_level_enum_descriptors_metadata_2eproto, file_level_service_descriptors_metadata_2eproto,
@@ -512,8 +515,8 @@ Metadata::Metadata(const Metadata& from)
       GetArenaForAllocation());
   }
   ::memcpy(&size_, &from.size_,
-    static_cast<size_t>(reinterpret_cast<char*>(&bits_pixel_) -
-    reinterpret_cast<char*>(&size_)) + sizeof(bits_pixel_));
+    static_cast<size_t>(reinterpret_cast<char*>(&obid_) -
+    reinterpret_cast<char*>(&size_)) + sizeof(obid_));
   // @@protoc_insertion_point(copy_constructor:Metadata)
 }
 
@@ -524,8 +527,8 @@ camera_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlrea
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
     reinterpret_cast<char*>(&size_) - reinterpret_cast<char*>(this)),
-    0, static_cast<size_t>(reinterpret_cast<char*>(&bits_pixel_) -
-    reinterpret_cast<char*>(&size_)) + sizeof(bits_pixel_));
+    0, static_cast<size_t>(reinterpret_cast<char*>(&obid_) -
+    reinterpret_cast<char*>(&size_)) + sizeof(obid_));
 }
 
 Metadata::~Metadata() {
@@ -559,8 +562,8 @@ void Metadata::Clear() {
   items_.Clear();
   camera_.ClearToEmpty();
   ::memset(&size_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&bits_pixel_) -
-      reinterpret_cast<char*>(&size_)) + sizeof(bits_pixel_));
+      reinterpret_cast<char*>(&obid_) -
+      reinterpret_cast<char*>(&size_)) + sizeof(obid_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -618,9 +621,17 @@ const char* Metadata::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::i
         } else
           goto handle_unusual;
         continue;
-      // string camera = 7;
+      // int32 obid = 7;
       case 7:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 58)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 56)) {
+          obid_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // string camera = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 66)) {
           auto str = _internal_mutable_camera();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "Metadata.camera"));
@@ -628,16 +639,16 @@ const char* Metadata::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::i
         } else
           goto handle_unusual;
         continue;
-      // repeated .MetadataItem items = 8;
-      case 8:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 66)) {
+      // repeated .MetadataItem items = 9;
+      case 9:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 74)) {
           ptr -= 1;
           do {
             ptr += 1;
             ptr = ctx->ParseMessage(_internal_add_items(), ptr);
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<66>(ptr));
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<74>(ptr));
         } else
           goto handle_unusual;
         continue;
@@ -706,22 +717,28 @@ uint8_t* Metadata::_InternalSerialize(
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(6, this->_internal_bits_pixel(), target);
   }
 
-  // string camera = 7;
+  // int32 obid = 7;
+  if (this->_internal_obid() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(7, this->_internal_obid(), target);
+  }
+
+  // string camera = 8;
   if (!this->_internal_camera().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_camera().data(), static_cast<int>(this->_internal_camera().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
       "Metadata.camera");
     target = stream->WriteStringMaybeAliased(
-        7, this->_internal_camera(), target);
+        8, this->_internal_camera(), target);
   }
 
-  // repeated .MetadataItem items = 8;
+  // repeated .MetadataItem items = 9;
   for (unsigned int i = 0,
       n = static_cast<unsigned int>(this->_internal_items_size()); i < n; i++) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(8, this->_internal_items(i), target, stream);
+      InternalWriteMessage(9, this->_internal_items(i), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -740,14 +757,14 @@ size_t Metadata::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated .MetadataItem items = 8;
+  // repeated .MetadataItem items = 9;
   total_size += 1UL * this->_internal_items_size();
   for (const auto& msg : this->items_) {
     total_size +=
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
 
-  // string camera = 7;
+  // string camera = 8;
   if (!this->_internal_camera().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
@@ -782,6 +799,11 @@ size_t Metadata::ByteSizeLong() const {
   // int32 bits_pixel = 6;
   if (this->_internal_bits_pixel() != 0) {
     total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32SizePlusOne(this->_internal_bits_pixel());
+  }
+
+  // int32 obid = 7;
+  if (this->_internal_obid() != 0) {
+    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32SizePlusOne(this->_internal_obid());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
@@ -828,6 +850,9 @@ void Metadata::MergeFrom(const Metadata& from) {
   if (from._internal_bits_pixel() != 0) {
     _internal_set_bits_pixel(from._internal_bits_pixel());
   }
+  if (from._internal_obid() != 0) {
+    _internal_set_obid(from._internal_obid());
+  }
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -854,8 +879,8 @@ void Metadata::InternalSwap(Metadata* other) {
       &other->camera_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(Metadata, bits_pixel_)
-      + sizeof(Metadata::bits_pixel_)
+      PROTOBUF_FIELD_OFFSET(Metadata, obid_)
+      + sizeof(Metadata::obid_)
       - PROTOBUF_FIELD_OFFSET(Metadata, size_)>(
           reinterpret_cast<char*>(&size_),
           reinterpret_cast<char*>(&other->size_));

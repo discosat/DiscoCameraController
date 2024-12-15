@@ -427,16 +427,17 @@ class Metadata final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kItemsFieldNumber = 8,
-    kCameraFieldNumber = 7,
+    kItemsFieldNumber = 9,
+    kCameraFieldNumber = 8,
     kSizeFieldNumber = 1,
     kHeightFieldNumber = 2,
     kWidthFieldNumber = 3,
     kChannelsFieldNumber = 4,
     kTimestampFieldNumber = 5,
     kBitsPixelFieldNumber = 6,
+    kObidFieldNumber = 7,
   };
-  // repeated .MetadataItem items = 8;
+  // repeated .MetadataItem items = 9;
   int items_size() const;
   private:
   int _internal_items_size() const;
@@ -454,7 +455,7 @@ class Metadata final :
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::MetadataItem >&
       items() const;
 
-  // string camera = 7;
+  // string camera = 8;
   void clear_camera();
   const std::string& camera() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
@@ -522,6 +523,15 @@ class Metadata final :
   void _internal_set_bits_pixel(int32_t value);
   public:
 
+  // int32 obid = 7;
+  void clear_obid();
+  int32_t obid() const;
+  void set_obid(int32_t value);
+  private:
+  int32_t _internal_obid() const;
+  void _internal_set_obid(int32_t value);
+  public:
+
   // @@protoc_insertion_point(class_scope:Metadata)
  private:
   class _Internal;
@@ -537,6 +547,7 @@ class Metadata final :
   int32_t channels_;
   int32_t timestamp_;
   int32_t bits_pixel_;
+  int32_t obid_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_metadata_2eproto;
 };
@@ -931,7 +942,27 @@ inline void Metadata::set_bits_pixel(int32_t value) {
   // @@protoc_insertion_point(field_set:Metadata.bits_pixel)
 }
 
-// string camera = 7;
+// int32 obid = 7;
+inline void Metadata::clear_obid() {
+  obid_ = 0;
+}
+inline int32_t Metadata::_internal_obid() const {
+  return obid_;
+}
+inline int32_t Metadata::obid() const {
+  // @@protoc_insertion_point(field_get:Metadata.obid)
+  return _internal_obid();
+}
+inline void Metadata::_internal_set_obid(int32_t value) {
+  
+  obid_ = value;
+}
+inline void Metadata::set_obid(int32_t value) {
+  _internal_set_obid(value);
+  // @@protoc_insertion_point(field_set:Metadata.obid)
+}
+
+// string camera = 8;
 inline void Metadata::clear_camera() {
   camera_.ClearToEmpty();
 }
@@ -982,7 +1013,7 @@ inline void Metadata::set_allocated_camera(std::string* camera) {
   // @@protoc_insertion_point(field_set_allocated:Metadata.camera)
 }
 
-// repeated .MetadataItem items = 8;
+// repeated .MetadataItem items = 9;
 inline int Metadata::_internal_items_size() const {
   return items_.size();
 }
