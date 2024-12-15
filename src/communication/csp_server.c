@@ -104,7 +104,7 @@ static void iface_init(CSPInterface *interfaceConfig) {
             .stopbits = 1,
             .paritysetting = 0,
         };
-        error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME, 0,  &default_iface); // ADDR set to zero for now, what should addr be???
+        error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME, interfaceConfig->Node,  &default_iface);
         default_iface->addr = interfaceConfig->Node;
         default_iface->name = "kiss";
         break;
