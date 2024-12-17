@@ -19,19 +19,135 @@ PARAM_DEFINE_STATIC_VMEM(
 )
 */
 
+// Capture
+
 PARAM_DEFINE_STATIC_VMEM(
     PARAMID_CAPTURE_PARAM,
     capture_param,
-    PARAM_TYPE_STRING,
-    PARAM_MAX_SIZE,
-    1,
-    PM_REMOTE,
+    PARAM_TYPE_UINT8,
+    -1,
+    0,
+    PM_CONF,
     capture_param_callback,
     NULL,
     config,
     VMEM_CONF_CAPTURE_PARAM,
-    "Set instructions on image capture, e.g. CAMERA=XXX;EXPOSURE=XXX;ISO=XXX;"
+    "Turn on capture by setting a value other than 0."
 );
+
+// Camera ID
+
+PARAM_DEFINE_STATIC_VMEM(
+    PARAMID_CAMERA_ID_PARAM,
+    camera_id_param,
+    PARAM_TYPE_UINT8,
+    -1,
+    0,
+    PM_CONF, 
+    NULL,
+    NULL,
+    config,
+    VMEM_CONF_CAMERA_ID_PARAM,
+    "The model of the camera to capture with, e.g. 1800 U-2040c, required value"
+);
+
+// Camera type
+
+PARAM_DEFINE_STATIC_VMEM(
+    PARAMID_CAMERA_TYPE_PARAM,
+    camera_type_param,
+    PARAM_TYPE_UINT8,
+    -1,
+    0,
+    PM_CONF,
+    NULL, // Do i need to set a callback?
+    NULL,
+    config,
+    VMEM_CONF_CAMERA_TYPE_PARAM,
+    "The camera type to capture with, by default VMB"
+);
+
+// Exposure
+
+PARAM_DEFINE_STATIC_VMEM(
+    PARAMID_EXPOSURE_PARAM,
+    exposure_param,
+    PARAM_TYPE_UINT32,
+    -1,
+    0,
+    PM_CONF,
+    NULL,
+    NULL,
+    config,
+    VMEM_CONF_EXPOSURE_PARAM,
+    "Exposure in microseconds. If value is not set, then exposure is estimated."
+);
+
+// ISO
+
+PARAM_DEFINE_STATIC_VMEM(
+    PARAMID_ISO_PARAM,
+    iso_param,
+    PARAM_TYPE_DOUBLE,
+    -1,
+    0,
+    PM_CONF,
+    NULL,
+    NULL,
+    config,
+    VMEM_CONF_ISO_PARAM,
+    "ISO or gain. By default 1."
+);
+
+// Number of images
+
+PARAM_DEFINE_STATIC_VMEM(
+    PARAMID_NUM_IMAGES_PARAM,
+    num_images_param,
+    PARAM_TYPE_UINT32,
+    -1,
+    0,
+    PM_CONF,
+    NULL,
+    NULL,
+    config,
+    VMEM_CONF_NUM_IMAGES_PARAM,
+    "Number of images to capture. By default 1."
+);
+
+// Interval
+
+PARAM_DEFINE_STATIC_VMEM(
+    PARAMID_INTERVAL_PARAM,
+    interval_param,
+    PARAM_TYPE_UINT32,
+    -1,
+    0,
+    PM_CONF,
+    NULL,
+    NULL,
+    config,
+    VMEM_CONF_INTERVAL_PARAM,
+    "Delay between images in microseconds (not including exposure). By default 0."
+);
+
+// OBID
+
+PARAM_DEFINE_STATIC_VMEM(
+    PARAMID_OBID_PARAM,
+    camera_obid_param,
+    PARAM_TYPE_UINT32,
+    -1,
+    0,
+    PM_CONF,
+    NULL,
+    NULL,
+    config,
+    VMEM_CONF_OBID_PARAM,
+    "Observation identifier. No default. Is required."
+);
+
+// Error log
 
 PARAM_DEFINE_STATIC_VMEM(
     PARAMID_ERROR_LOG,
