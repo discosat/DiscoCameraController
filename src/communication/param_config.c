@@ -40,15 +40,15 @@ PARAM_DEFINE_STATIC_VMEM(
 PARAM_DEFINE_STATIC_VMEM(
     PARAMID_CAMERA_ID_PARAM,
     camera_id_param,
-    PARAM_TYPE_UINT8,
-    -1,
-    0,
+    PARAM_TYPE_STRING,
+    CAMERA_ID_MAX_LENGTH,
+    1,
     PM_CONF, 
     NULL,
     NULL,
     config,
     VMEM_CONF_CAMERA_ID_PARAM,
-    "The model of the camera to capture with, e.g. 1800 U-2040c, required value"
+    "The id of the camera to capture with"
 );
 
 // Camera type
@@ -60,7 +60,7 @@ PARAM_DEFINE_STATIC_VMEM(
     -1,
     0,
     PM_CONF,
-    NULL, // Do i need to set a callback?
+    NULL,
     NULL,
     config,
     VMEM_CONF_CAMERA_TYPE_PARAM,
@@ -135,7 +135,7 @@ PARAM_DEFINE_STATIC_VMEM(
 
 PARAM_DEFINE_STATIC_VMEM(
     PARAMID_OBID_PARAM,
-    camera_obid_param,
+    obid_param,
     PARAM_TYPE_UINT32,
     -1,
     0,
@@ -145,6 +145,22 @@ PARAM_DEFINE_STATIC_VMEM(
     config,
     VMEM_CONF_OBID_PARAM,
     "Observation identifier. No default. Is required."
+);
+
+// Pipeline ID
+
+PARAM_DEFINE_STATIC_VMEM(
+    PARAMID_PIPELINE_ID_PARAM,
+    pipeline_id_param,
+    PARAM_TYPE_UINT32,
+    -1,
+    0,
+    PM_CONF,
+    NULL,
+    NULL,
+    config,
+    VMEM_CONF_PIPELINE_ID_PARAM,
+    "Pipeline identifier"
 );
 
 // Error log

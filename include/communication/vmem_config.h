@@ -4,14 +4,15 @@
 #include <vmem/vmem.h>
 extern vmem_t vmem_config;
 
-#define VMEM_CONF_CAPTURE_PARAM 0x00
-#define VMEM_CONF_CAMERA_ID_PARAM 0x08
-#define VMEM_CONF_CAMERA_TYPE_PARAM 0x0f
-#define VMEM_CONF_EXPOSURE_PARAM 0x18
-#define VMEM_CONF_ISO_PARAM 0x38
-#define VMEM_CONF_NUM_IMAGES_PARAM 0x78
-#define VMEM_CONF_INTERVAL_PARAM 0x98
-#define VMEM_CONF_OBID_PARAM 0xb8
-#define VMEM_CONF_ERROR_PARAM 0xd8
+#define VMEM_CONF_CAPTURE_PARAM 0x64 // 0x000       // 1 byte
+#define VMEM_CONF_CAMERA_ID_PARAM 0xc8 // 0x100     // 256 bytes
+#define VMEM_CONF_CAMERA_TYPE_PARAM 0x320  // 0x008   // 1 byte
+#define VMEM_CONF_EXPOSURE_PARAM 0x384  // 0x010      // 4 bytes
+#define VMEM_CONF_ISO_PARAM 0x3e8  // 0x030           // 8 bytes
+#define VMEM_CONF_NUM_IMAGES_PARAM 0x44c  // 0x070    // 4 bytes
+#define VMEM_CONF_INTERVAL_PARAM 0x4b0  // 0x090      // 4 bytes
+#define VMEM_CONF_OBID_PARAM 0x514  // 0x0b0          // 4 bytes
+#define VMEM_CONF_PIPELINE_ID_PARAM 0x578  // 0x0d0   // 4 bytes
+#define VMEM_CONF_ERROR_PARAM 0x5dc  // 0x0f0         // 2 bytes
 
 #endif /* VMEM_CONFIG_H */

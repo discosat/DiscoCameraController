@@ -28,18 +28,18 @@ enum struct CameraType {
     VMB,
     IR,
     TEST,
-    Unkown,
+    Unknown,
 };
 
 typedef struct CaptureMessage {
-    std::string CameraId;   // camera id to use
-    CameraType Type;        // camera type to use [IR, Vimba, test, etc]
-    size_t NumberOfImages;  // number of images to take
-    u_int Exposure;         // exposure
-    float ISO;              // Gain/ISO
-    u_int Interval;         // delay in microseconds
-    u_int PipelineId;       // Pipeline to use
-    u_int OBID;             // image batch unique identifier
+    std::string CameraId;       // camera id to use
+    CameraType Type;            // camera type to use [IR, Vimba, Test, Unknown]
+    uint32_t NumberOfImages;    // number of images to take
+    uint32_t Exposure;          // exposure
+    double ISO;                 // Gain/ISO
+    uint32_t Interval;          // delay in microseconds
+    uint32_t PipelineId;        // Pipeline to use
+    uint32_t OBID;              // image batch unique identifier
 } CaptureMessage;
 
 // how many bytes in the beginning of the image buffer is allocated for metadata, which is just the size of the image

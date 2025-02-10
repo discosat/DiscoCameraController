@@ -8,7 +8,7 @@
 #include "param_config.h"
 
 // callback for image capture
-typedef void(*CallbackFunc)(char*, void*, uint16_t*);
+typedef void(*CallbackFunc)(char *, uint8_t, uint32_t, double, uint32_t, uint32_t, uint32_t, uint32_t, void*, uint16_t*);
 
 typedef enum CSPInterfaceType {
     ZMQ = 0,
@@ -39,7 +39,7 @@ inline CSPInterfaceType StringToCSPInterface(const char* name)
     }
 }
 
-void capture_param_callback(struct param_s *param, int offset);
+void capture_param_callback();
 
 void server_start(CSPInterface *interfaceConfig, CallbackFunc callback, void* obj);
 

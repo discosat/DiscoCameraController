@@ -75,7 +75,8 @@ void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* 
     std::cout << "\tISO: " << capture_instructions.ISO << std::endl;
     std::cout  << "\tNumber of images: " << capture_instructions.NumberOfImages << std::endl;
     std::cout  << "\tPipeline id: " << capture_instructions.PipelineId << std::endl;
-    
+    std::cout  << "\tObservation id: " << capture_instructions.OBID << std::endl;
+
     std::unique_ptr<CameraController> controller = CaptureController::CreateControllerInstance(capture_instructions.Type);
 
     if(controller == nullptr){

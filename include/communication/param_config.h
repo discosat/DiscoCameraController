@@ -3,7 +3,17 @@
 
 #include <param/param.h>
 extern param_t capture_param;
+extern param_t camera_id_param;
+extern param_t camera_type_param;
+extern param_t exposure_param;
+extern param_t iso_param;
+extern param_t num_images_param;
+extern param_t interval_param;
+extern param_t obid_param;
+extern param_t pipeline_id_param;
 extern param_t error_log;
+
+#define CAMERA_ID_MAX_LENGTH 128
 
 #define PARAMID_CAPTURE_PARAM       1
 #define PARAMID_CAMERA_ID_PARAM     2 
@@ -13,8 +23,9 @@ extern param_t error_log;
 #define PARAMID_NUM_IMAGES_PARAM    6 
 #define PARAMID_INTERVAL_PARAM      7 
 #define PARAMID_OBID_PARAM          8 
-#define PARAMID_ERROR_LOG           9
+#define PARAMID_PIPELINE_ID_PARAM   9
+#define PARAMID_ERROR_LOG           10
 
-#define PARAM_MAX_SIZE 312 // Error log is 128 bytes
+#define PARAM_MAX_SIZE 512
 
 #endif /* PARAM_CONFIG_H */

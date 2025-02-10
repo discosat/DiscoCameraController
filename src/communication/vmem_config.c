@@ -2,4 +2,4 @@
 
 // TODO: Problematic for Cortex-M7
 // Define file to store persistent params
-VMEM_DEFINE_FILE(config, "config", "config.vmem", 5000);
+VMEM_DEFINE_FILE(config, "config", "config.vmem", 7000);

@@ -23,7 +23,15 @@
 #include <errors.hpp>
 
 // shared resources and mutexes
-char capture_instruction[PARAM_MAX_SIZE];
+uint8_t capture;
+char camera_id[CAMERA_ID_MAX_LENGTH];
+uint8_t camera_type;
+uint32_t exposure;
+double iso;
+uint32_t num_images;
+uint32_t interval;
+uint32_t obid;
+uint32_t pipeline_id;
 pthread_mutex_t mutex;
 pthread_cond_t cond;
 
@@ -46,16 +54,28 @@ void* router_task(void* param) {
     return NULL;
 }
 
-void capture_param_callback(struct param_s *param, int offset) {
-    char* data = malloc(PARAM_MAX_SIZE);
-    param_get_string(param, data, PARAM_MAX_SIZE);
+void capture_param_callback() {
+    
+    uint8_t param_value = param_get_uint8(&capture_param);
+
+
+    if (!param_value)
+        return;
+    param_set_uint8(&capture_param, 0);
+    
     pthread_mutex_lock(&mutex);
-    
-    strcpy(capture_instruction, data);
-    
+
+    param_get_string(&camera_id_param, camera_id, CAMERA_ID_MAX_LENGTH);
+    camera_type = param_get_uint8(&camera_type_param);
+    exposure = param_get_uint32(&exposure_param);
+    iso = param_get_double(&iso_param);
+    num_images = param_get_uint32(&num_images_param);
+    interval = param_get_uint32(&interval_param);
+    obid = param_get_uint32(&obid_param);
+    pipeline_id = param_get_uint32(&pipeline_id_param);
+        
     pthread_cond_signal(&cond);
     pthread_mutex_unlock(&mutex);
-    free(data);
 }
 
 static void csp_init_fun(void) {
@@ -104,7 +124,7 @@ static void iface_init(CSPInterface *interfaceConfig) {
             .stopbits = 1,
             .paritysetting = 0,
         };
-        error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME, 0,  &default_iface); // ADDR set to zero for now, what should addr be???
+        error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME, interfaceConfig->Node,  &default_iface);
         default_iface->addr = interfaceConfig->Node;
         default_iface->name = "kiss";
         break;
@@ -145,8 +165,9 @@ void server_start(CSPInterface *interfaceConfig, CallbackFunc callback, void* ob
         pthread_cond_wait(&cond, &mutex);
         u_int16_t error = 0;
 
-        if(strlen(capture_instruction) > 0 && _RUNNING){
-            callback(capture_instruction, obj, &error);
+        if(capture > 0 && _RUNNING){
+            callback(camera_id, camera_type, exposure, iso, num_images, interval, obid, pipeline_id, obj, &error);
+            capture = 0;
         }
         pthread_mutex_unlock(&mutex);
         param_set_uint16(&error_log, error);

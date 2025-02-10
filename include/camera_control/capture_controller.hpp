@@ -37,15 +37,10 @@ class CaptureController{
 
         void Capture(CaptureMessage capture_instructions, u_int16_t* error);
 
-        static void CaptureCallback(char* capture_instructions, void* obj, u_int16_t* error) {
+        static void CaptureCallback(char *camera_id, uint8_t camera_type, uint32_t exposure, double iso, uint32_t num_images, uint32_t interval, uint32_t obid, uint32_t pipeline_id, void* obj, u_int16_t* error) {
             if (obj){
-                std::string input(capture_instructions);
-                if(input.size() == 0){
-                    *error = ERROR_CODE::PARSING_ERROR_MESSAGE_EMPTY;
-                    return;
-                }
 
-                CaptureMessage msg = ParseMessage(input);
+                CaptureMessage msg = CreateCaptureMessage(camera_id, camera_type, exposure, iso, num_images, interval, obid, pipeline_id);
 
                 try{
                     static_cast<CaptureController*>(obj)->Capture(msg, error);
@@ -70,7 +65,7 @@ class CaptureController{
                 return std::make_unique<TestController>();
                 break;
             
-            case CameraType::Unkown:
+            case CameraType::Unknown:
                 return nullptr;
                 break;
             
@@ -80,56 +75,17 @@ class CaptureController{
             }
         }
 
-        static CaptureMessage ParseMessage(const std::string& input) {
+        static CaptureMessage CreateCaptureMessage(char *camera_id, uint8_t camera_type, uint32_t exposure, double iso, uint32_t num_images, uint32_t interval, uint32_t obid, uint32_t pipeline_id) {
             CaptureMessage message;
-            message.Exposure = EXPOSURE_DEFAULT;
-            message.ISO = ISO_DEFAULT;
-            message.Interval = INTERVAL_DEFAULT;
-            message.NumberOfImages = NUM_IMAGES_DEFAULT;
-            message.CameraId = "";
-            message.Type = CAMERA_TYPE_DEFAULT;
-            message.PipelineId = PIPELINE_ID_DEFAULT;
-            message.OBID = 0;
+            message.Exposure = exposure;
+            message.ISO = iso;
+            message.Interval = interval;
+            message.NumberOfImages = num_images;
+            message.CameraId = std::string(camera_id);
+            message.Type = IntToCameraType(camera_type);
+            message.PipelineId = pipeline_id;
+            message.OBID = obid;
 
-            std::vector<std::string> pairs;
-            std::stringstream ss(input);
-            std::string pair;
-            while (std::getline(ss, pair, ';')) {
-                pairs.push_back(pair);
-            }
-
-            for (const auto& p : pairs) {
-                std::istringstream iss(p);
-                std::string variable, value;
-                std::getline(iss, variable, '=');
-                std::getline(iss, value);
-                
-                variable.erase(0, variable.find_first_not_of(" \t\n\r\f\v"));
-                variable.erase(variable.find_last_not_of(" \t\n\r\f\v") + 1);
-                value.erase(0, value.find_first_not_of(" \t\n\r\f\v"));
-                value.erase(value.find_last_not_of(" \t\n\r\f\v") + 1);
-                
-                // Check variable name and assign value -> kinda dirty...
-                if (variable == "NUM_IMAGES") {
-                    message.NumberOfImages = std::stoi(value);
-                } else if (variable == "ISO") {
-                    message.ISO = std::stof(value);
-                } else if (variable == "INTERVAL") {
-                    message.Interval = std::stoi(value);
-                } else if (variable == "EXPOSURE") {
-                    message.Exposure = std::stoi(value);
-                } else if (variable == "CAMERA_ID") {
-                    message.CameraId = std::string(value);
-                } else if (variable == "CAMERA_TYPE") {
-                    message.Type = StringToCameraType(value);
-                } else if (variable == "PIPELINE_ID") {
-                    message.PipelineId = std::stoi(value);
-                } else if (variable == "OBID") {
-                    message.OBID == std::stoi(value);
-                } else {
-                    continue;
-                }
-            }
             return message;
         }
     

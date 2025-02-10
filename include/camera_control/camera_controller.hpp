@@ -7,17 +7,17 @@
 #include <common.hpp>
 #include <map>
 
-const std::map<std::string, CameraType> CameraTypeMap = {
-    {"VMB", CameraType::VMB},
-    {"IR", CameraType::IR},
-    {"TEST", CameraType::TEST},
+const std::map<int, CameraType> CameraTypeMap = {
+    {0, CameraType::VMB},
+    {1, CameraType::IR},
+    {2, CameraType::TEST},
 };
 
-static inline CameraType StringToCameraType(std::string type) {
+static inline CameraType IntToCameraType(int type) {
     if (CameraTypeMap.count(type)) {
         return CameraTypeMap.at(type);
     } else {
-        return CameraType::Unkown;
+        return CameraType::Unknown;
     }
 }
 

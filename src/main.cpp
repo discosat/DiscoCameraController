@@ -121,12 +121,12 @@ int main(int argc, char *argv[], char *envp[]){
         interfaceConfig.Port = port;
 
         server_start(&interfaceConfig, captureController->CaptureCallback, (void*)captureController);
-    } else {
-        std::cout << "Testing camera controller..." << std::endl;
-        std::string debug_message = std::string(debug_message_arg);
-        u_int16_t error = 0;
-        captureController->CaptureCallback(debug_message.data(), captureController, &error);
-    }
+     } // else {
+    //     std::cout << "Testing camera controller..." << std::endl;
+    //     std::string debug_message = std::string(debug_message_arg);
+    //     u_int16_t error = 0;
+    //     captureController->CaptureCallback(debug_message.data(), captureController, &error);
+    // }
 
     delete captureController;
     return 0;
