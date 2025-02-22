@@ -54,22 +54,44 @@ The camera controller captures raw data from the visible light image sensors in 
 **Undecided**
 
 ## Capturing images
-The camera controller exposes a CSP parameter through [libparam](https://github.com/spaceinventor/libparam), called `capture_param`. This parameter is a semi-colon seperated string of values describing the image capture. An example of a CSH command setting this parameter is below:
+The camera controller exposes CSP parameters through [libparam](https://github.com/spaceinventor/libparam). These parameters control aspects of the camera and image capture. Following table gives an overview over the possible parameters:
+
+|        Name |        Type |        Example |        Description                                            |
+|-------------|-------------|----------------|---------------------------------------------------------------|
+| camera_id_param   | string      | 1800 U-2040c   | The model of the camera to capture with                       |
+| camera_type_param | int (0 - 2)      | 0            | The camera type to capture with                               |
+| exposure_param    | int         | 55000          | Exposure in microseconds                                      |
+| iso_param         | double      | 1.0            | ISO or gain                                                   |
+| num_images_param  | int         | 10             | Number of images to capture                                   |
+| interval_param    | int         | 0              | Delay between images in microseconds (not including exposure) |
+| obid_param    | int         | 130              | Unique identifier for an image batch |
+| pipeline_id    | int         | 2              | Unique identifier for the image processing pipeline |
+
+The correspondence between camera type used, and the camera_type_param is:
+ 0 - VMB
+ 1 - IR
+ 2 - TEST
+
+Whenever image capture is activated, it is the most recently specified parameters that are used. There are no default values. To fetch the current parameters of the camera controller, use following commands:
 
 ```
-set capture_param "CAMERA_TYPE=VMB;CAMERA_ID=1800 U-2040c;NUM_IMAGES=10;EXPOSURE=55000;ISO=0;INTERVAL=55000;"
+
 ```
 
-The possible values that can be set are the following.
+Below is an example of specifying the parameters and activating image capture:
 
-|        Name |        Type |        Example |        Description                                            |        Required |        Default                         |
-|-------------|-------------|----------------|---------------------------------------------------------------|-----------------|----------------------------------------|
-| CAMERA_ID   | string      | 1800 U-2040c   | The model of the camera to capture with                       | True            | N/A                                    |
-| CAMERA_TYPE | string      | VMB            | The camera type to capture with                               | FALSE           | VMB                                    |
-| EXPOSURE    | int         | 55000          | Exposure in microseconds                                      | False           | If not set, then exposure is estimated |
-| ISO         | double      | 1.0            | ISO or gain                                                   | False           | 1                                      |
-| NUM_IMAGES  | int         | 10             | Number of images to capture                                   | False           | 1                                      |
-| INTERVAL    | int         | 0              | Delay between images in microseconds (not including exposure) | False           | 0                                      |
+```
+set camera_id_param "1800 U-2040c"
+set camera_type_param 1
+set exposure_param 55000
+set iso_param 0
+set num_images_param 5
+set interval_param 55000
+set obid_param 15
+set pipeline_id_param 2
+set capture_param 1
+```
+
 
 ## Building
 The Camera controller is built with the Meson build system. A build script is included in the [github repository](https://github.com/ivaroli/DiscoCameraController). Simply call `./configure.sh` and the controller will be built.
