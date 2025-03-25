@@ -165,12 +165,9 @@ void server_start(CSPInterface *interfaceConfig, CallbackFunc callback, void* ob
         u_int16_t error = 0;
 
         if(capture > 0 && _RUNNING){
-            printf("%u (SUCCESS)\n", capture);
             callback(camera_id, camera_type, exposure, iso, num_images, interval, obid, pipeline_id, obj, &error);
-            capture = 0;
-        } else {
-            printf("%u (FAIL)\n", capture);
-        }
+            param_set_uint8(&capture_param, 0); // Reset to zero. 
+        } 
         pthread_mutex_unlock(&mutex);
         param_set_uint16(&error_log, error);
     }
