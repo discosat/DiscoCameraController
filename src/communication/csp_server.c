@@ -23,8 +23,8 @@
 #include <errors.hpp>
 
 // shared resources and mutexes
-uint8_t capture;
 char camera_id[CAMERA_ID_MAX_LENGTH];
+uint8_t capture;
 uint8_t camera_type;
 uint32_t exposure;
 double iso;
@@ -61,10 +61,9 @@ void capture_param_callback() {
 
     if (!param_value)
         return;
-    param_set_uint8(&capture_param, 0);
+    capture = param_get_uint8(&capture_param);
     
     pthread_mutex_lock(&mutex);
-
     param_get_string(&camera_id_param, camera_id, CAMERA_ID_MAX_LENGTH);
     camera_type = param_get_uint8(&camera_type_param);
     exposure = param_get_uint32(&exposure_param);
@@ -124,7 +123,7 @@ static void iface_init(CSPInterface *interfaceConfig) {
             .stopbits = 1,
             .paritysetting = 0,
         };
-        error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME, interfaceConfig->Node,  &default_iface);
+        error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME,  &default_iface);
         default_iface->addr = interfaceConfig->Node;
         default_iface->name = "kiss";
         break;
@@ -166,8 +165,11 @@ void server_start(CSPInterface *interfaceConfig, CallbackFunc callback, void* ob
         u_int16_t error = 0;
 
         if(capture > 0 && _RUNNING){
+            printf("%u (SUCCESS)\n", capture);
             callback(camera_id, camera_type, exposure, iso, num_images, interval, obid, pipeline_id, obj, &error);
             capture = 0;
+        } else {
+            printf("%u (FAIL)\n", capture);
         }
         pthread_mutex_unlock(&mutex);
         param_set_uint16(&error_log, error);
