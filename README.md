@@ -81,7 +81,7 @@ Whenever image capture is activated, it is the most recently specified parameter
 Below is an example of specifying the parameters and activating image capture:
 
 ```
-set camera_id_param "1800 U-2040c"
+set camera_id_param "1800 U-500c"
 set camera_type_param 1
 set exposure_param 55000
 set iso_param 0
@@ -94,7 +94,7 @@ set capture_param 1
 
 
 ## Building
-The Camera controller is built with the Meson build system. A build script is included in the [github repository](https://github.com/ivaroli/DiscoCameraController). Simply call `./configure.sh` and the controller will be built.
+The Camera controller is built with the Meson build system. A build script is included in the [github repository](https://github.com/ivaroli/DiscoCameraController). Simply call `./build.sh` and the controller will be built.
 
 ## Error log
 The camera controller provides an integer parameter via the CSP parameter named error_log, denoting the latest cause of failure encountered during image capture. Refer to the table below for the list of potential error codes along with their respective explanations.
