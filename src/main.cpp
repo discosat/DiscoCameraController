@@ -86,7 +86,7 @@ int main(int argc, char *argv[], char *envp[]){
     }
 
     bool debug = has_option(args, "-D");
-    const std::string_view debug_message_arg = get_option(args, "-M");
+    //const std::string_view debug_message_arg = get_option(args, "-M");
     
     const std::string_view interface_arg = get_option(args, "-i");
     const std::string_view device_arg = get_option(args, "-d");

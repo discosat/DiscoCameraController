@@ -38,7 +38,7 @@ void readMem(ImageBatch msg){
     }
 
     // create a local copy of the data
-    uint localDataSize = msg.batch_size/msg.num_images;
+    //uint localDataSize = msg.batch_size/msg.num_images;
     unsigned char* local_data = new unsigned char[msg.batch_size];
 
     // copy the shared data to the local copy
