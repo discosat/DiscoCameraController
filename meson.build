@@ -18,6 +18,7 @@ project('camera_controller', 'c', 'cpp', subproject_dir: 'lib', default_options:
 ])
 
 add_global_arguments('-I../include', language: 'c')
+add_project_arguments('-Wno-error', language: 'cpp')
 
 sources = files([
     'src/main.cpp',
