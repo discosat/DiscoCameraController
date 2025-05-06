@@ -1,4 +1,5 @@
 #!/bin/sh
 rm -rf build
-meson setup . build
+ninja -t clean
+meson setup build
 ninja -C build
