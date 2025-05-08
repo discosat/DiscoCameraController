@@ -22,6 +22,13 @@
 #include <sys/types.h>
 #include <errors.hpp>
 
+#include <errno.h> // for system errors
+
+/*
+    Error codes for "errno" can be found here:
+    https://gist.github.com/greggyNapalm/2413028 
+*/
+
 // shared resources and mutexes
 char camera_id[CAMERA_ID_MAX_LENGTH];
 uint8_t capture;
@@ -109,10 +116,12 @@ static void iface_init(CSPInterface *interfaceConfig) {
     {
     case ZMQ:
         error = csp_zmqhub_init_filter2("zmq", interfaceConfig->Device, interfaceConfig->Node, 8, true, &default_iface, NULL, CSP_ZMQPROXY_SUBSCRIBE_PORT, CSP_ZMQPROXY_PUBLISH_PORT);
+        csp_print("Value of errno: %d\n", errno);
         default_iface->name = "zmq";
         break;
     case CAN:
         error = csp_can_socketcan_open_and_add_interface(interfaceConfig->Device, "CAN", interfaceConfig->Node, 0, 0, &default_iface);
+        csp_print("Value of errno: %d\n", errno);
         default_iface->name = "CAN";
         break;
     case KISS:
@@ -125,6 +134,7 @@ static void iface_init(CSPInterface *interfaceConfig) {
         };
         error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME,  &default_iface);
         default_iface->addr = interfaceConfig->Node;
+        csp_print("Value of errno: %d\n", errno);
         default_iface->name = "kiss";
         break;
     }

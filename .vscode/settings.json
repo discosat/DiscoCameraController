@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        ".fantomasignore": "ignore",
         "random": "cpp",
         "new": "cpp",
         "array": "cpp",
@@ -97,7 +98,8 @@
         "hooks.h": "c",
         "measure.h": "c",
         "csp_if_zmqhub.h": "c",
-        "common.hpp": "c"
+        "common.hpp": "c",
+        "errors.hpp": "c"
     },
     "cmake.configureOnOpen": true,
     "C_Cpp.default.compileCommands": "/home/ivar/Dicso2CameraControl/build/compile_commands.json",
