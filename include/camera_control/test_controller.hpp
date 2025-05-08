@@ -9,7 +9,7 @@
 #define TEST_HEIGHT 1944
 #define TEST_BPP 12
 #define TEST_TEST_CHANNELS 1
-#define TEST_FILE_LOCATION "/home/burak/Documents/DISCO-2/DIPP/sim/images/image1.bayerRG"
+#define TEST_FILE_LOCATION "/home/burak/Documents/DISCO-2/DiscoCameraController/test_img_1.jpg"
 
 class TestController: public CameraController {
     public:

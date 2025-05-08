@@ -112,7 +112,8 @@ static void iface_init(CSPInterface *interfaceConfig) {
         default_iface->name = "zmq";
         break;
     case CAN:
-        csp_print("CAN not supported at this time.");
+        error = csp_can_socketcan_open_and_add_interface(interfaceConfig->Device, "CAN", interfaceConfig->Node, 0, 0, &default_iface);
+        default_iface->name = "CAN";
         break;
     case KISS:
         csp_usart_conf_t conf = {
@@ -131,6 +132,8 @@ static void iface_init(CSPInterface *interfaceConfig) {
     if (error != CSP_ERR_NONE) {
         csp_print("failed to add interface [%s], error: %d\n", interfaceConfig->Device, error);
         exit(1);
+    } else {
+        csp_print("Initialized interface:\n\t - Device: [%s]\n\t - Node: %i\n\t - Interface mode: %s\n", interfaceConfig->Device, interfaceConfig->Node, default_iface->name);
     }
 
     default_iface->is_default = 1;
