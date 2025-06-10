@@ -71,6 +71,8 @@ void capture_param_callback() {
     capture = param_get_uint8(&capture_param);
     
     pthread_mutex_lock(&mutex);
+
+    /*
     param_get_string(&camera_id_param, camera_id, CAMERA_ID_MAX_LENGTH);
     camera_type = param_get_uint8(&camera_type_param);
     exposure = param_get_uint32(&exposure_param);
@@ -79,6 +81,18 @@ void capture_param_callback() {
     interval = param_get_uint32(&interval_param);
     obid = param_get_uint32(&obid_param);
     pipeline_id = param_get_uint32(&pipeline_id_param);
+    */
+
+    
+    strcpy(camera_id, "1800 U-500c");  // Use actual camera
+    camera_type = 0;  // VMB camera type
+    exposure = 50000;  // Increased from 5ms to 50ms for much brighter images
+    iso = 4.0;         // Increased from 1.0 to 4.0 for 4x gain boost
+    num_images = 1;
+    interval = 0;
+    obid = 0;
+    pipeline_id = 0;
+    
         
     pthread_cond_signal(&cond);
     pthread_mutex_unlock(&mutex);
@@ -177,6 +191,7 @@ void server_start(CSPInterface *interfaceConfig, CallbackFunc callback, void* ob
         u_int16_t error = 0;
 
         if(capture > 0 && _RUNNING){
+            csp_print("Using camera_id: %s\n", camera_id);
             callback(camera_id, camera_type, exposure, iso, num_images, interval, obid, pipeline_id, obj, &error);
             param_set_uint8(&capture_param, 0); // Reset to zero. 
         } 

@@ -6,8 +6,7 @@
 #include "common.hpp"
 #include "camera_controller.hpp"
 
-#define VMB_BPP 12      // Bits per pixel in the raw output of BayerRG
-#define VMB_CHANNELS 1  // number of channels on BayerRG pixel format
+// Channels will be determined dynamically based on pixel format
 
 class VimbaController: public CameraController {
     private:
@@ -18,6 +17,8 @@ class VimbaController: public CameraController {
         VmbCPP::FramePtr aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain);
         bool turnOnCamera(VmbCPP::CameraPtr cam);
         bool turnOffCamera(VmbCPP::CameraPtr cam);
+        int getBitsPerPixelFromFormat(VmbPixelFormatType format);
+        int getChannelsFromFormat(VmbPixelFormatType format);
 
     public:
         VimbaController();

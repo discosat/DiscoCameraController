@@ -67,6 +67,8 @@ executable('Disco2CameraControl', sources,
     dependencies : deps,
     install : true,
     link_args : ['-Wl,--export-dynamic', '-ldl'],
+    c_args : ['-g', '-O0'],
+    cpp_args : ['-g', '-O0'],
 )
 
 # Test code

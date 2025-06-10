@@ -85,9 +85,7 @@ void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* 
     }
 
     if(capture_instructions.Exposure == 0){
-        std::cout << "Finding exposure" << std::endl;
         capture_instructions.Exposure = setExposure(controller.get(), capture_instructions);
-        std::cout << "Found exposure: " << capture_instructions.Exposure << std::endl;
     }
 
     auto images = controller->Capture(capture_instructions, error);
@@ -176,7 +174,6 @@ size_t CaptureController::setExposure(CameraController *controller, CaptureMessa
         Image img = controller->Capture(cap_msg, &error).at(0);
         double currentEntropy = calculateEntropy(img);
 
-        std::cout << currentExposure << " | " << currentEntropy << std::endl;
 
         if(lastEntropy == -1){
             lastEntropy = currentEntropy;
@@ -202,6 +199,5 @@ size_t CaptureController::setExposure(CameraController *controller, CaptureMessa
         steps++;
     }
 
-    std::cout << "Exp: " << currentExposure << std::endl;
     return std::round(currentExposure);
 }

@@ -113,20 +113,20 @@ int main(int argc, char *argv[], char *envp[]){
 
     CaptureController* captureController = new CaptureController();
 
-    if(!debug){
-        CSPInterface interfaceConfig;
-        interfaceConfig.Interface = StringToCSPInterface(interface.c_str());
-        interfaceConfig.Device = device.c_str();
-        interfaceConfig.Node = node;
-        interfaceConfig.Port = port;
-
-        server_start(&interfaceConfig, captureController->CaptureCallback, (void*)captureController);
-     } // else {
-    //     std::cout << "Testing camera controller..." << std::endl;
-    //     std::string debug_message = std::string(debug_message_arg);
-    //     u_int16_t error = 0;
-    //     captureController->CaptureCallback(debug_message.data(), captureController, &error);
-    // }
+    // Take a picture immediately and exit
+    std::cout << "Taking picture..." << std::endl;
+    char camera_id[] = "1800 U-500c";
+    uint8_t camera_type = 0;    // VMB camera type
+    uint32_t exposure = 50000;  // Increased from 3ms to 50ms for much brighter images
+    double iso = 4.0;           // Increased from 1.0 to 4.0 for 4x gain boost
+    uint32_t num_images = 1;
+    uint32_t interval = 0;
+    uint32_t obid = 0;
+    uint32_t pipeline_id = 0;
+    u_int16_t error = 0;
+    
+    captureController->CaptureCallback(camera_id, camera_type, exposure, iso, num_images, interval, obid, pipeline_id, captureController, &error);
+    std::cout << "Picture capture completed with error code: " << error << std::endl;
 
     delete captureController;
     return 0;

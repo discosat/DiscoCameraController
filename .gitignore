@@ -1,7 +1,9 @@
 build/*
 *.vmem
 *.csv
+*.bin
 test_code/
+captured_images/
 
 !test_code/csp_client.cpp
 !test_code/csp_client_posix.cpp
