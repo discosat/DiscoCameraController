@@ -54,19 +54,23 @@ def try_all_patterns(bayer_image, flip_vertical=True):
     # Based on the C++ code, the camera tries BayerGR12 first, then BayerRG12
     # So GRBG pattern is most likely correct
     
+    # Create output directory if it doesn't exist
+    output_dir = Path('captured_images')
+    output_dir.mkdir(exist_ok=True)
+    
     for pattern in patterns:
         try:
             color_image = demosaic_bayer(bayer_image, pattern, flip_vertical)
             
             # Save with flip indicator in filename
             flip_str = '_flipped' if flip_vertical else ''
-            output_filename = f'demosaic_{pattern.lower()}{flip_str}.jpg'
-            cv2.imwrite(output_filename, color_image)
+            output_filename = output_dir / f'demosaic_{pattern.lower()}{flip_str}.jpg'
+            cv2.imwrite(str(output_filename), color_image)
             print(f"Saved {output_filename} using {pattern} pattern")
             
             # Also save as PNG for better quality
-            png_filename = f'demosaic_{pattern.lower()}{flip_str}.png'
-            cv2.imwrite(png_filename, color_image)
+            png_filename = output_dir / f'demosaic_{pattern.lower()}{flip_str}.png'
+            cv2.imwrite(str(png_filename), color_image)
             
         except Exception as e:
             print(f"Failed to process {pattern}: {e}")
@@ -93,9 +97,10 @@ def main():
     try_all_patterns(bayer_image, flip_vertical=False)
     
     # Save the raw Bayer data as grayscale for inspection
+    output_dir = Path('captured_images')
     bayer_8bit = (bayer_image >> 4).astype(np.uint8)
-    cv2.imwrite('bayer_raw_original.jpg', bayer_8bit)
-    cv2.imwrite('bayer_raw_flipped.jpg', cv2.flip(bayer_8bit, 0))
+    cv2.imwrite(str(output_dir / 'bayer_raw_original.jpg'), bayer_8bit)
+    cv2.imwrite(str(output_dir / 'bayer_raw_flipped.jpg'), cv2.flip(bayer_8bit, 0))
     print("\nSaved raw Bayer data as grayscale (both orientations)")
     
     # Provide recommendation based on C++ code analysis
