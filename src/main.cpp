@@ -117,8 +117,8 @@ int main(int argc, char *argv[], char *envp[]){
     std::cout << "Taking picture..." << std::endl;
     char camera_id[] = "1800 U-500c";
     uint8_t camera_type = 0;    // VMB camera type
-    uint32_t exposure = 50000;  // Increased from 3ms to 50ms for much brighter images
-    double iso = 4.0;           // Increased from 1.0 to 4.0 for 4x gain boost
+    uint32_t exposure = 1000;   // 1ms exposure for proper exposure
+    double iso = 1.0;           // Standard gain
     uint32_t num_images = 1;
     uint32_t interval = 0;
     uint32_t obid = 0;
