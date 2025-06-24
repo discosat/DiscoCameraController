@@ -72,7 +72,7 @@ void capture_param_callback() {
     
     pthread_mutex_lock(&mutex);
 
-    /*
+    
     param_get_string(&camera_id_param, camera_id, CAMERA_ID_MAX_LENGTH);
     camera_type = param_get_uint8(&camera_type_param);
     exposure = param_get_uint32(&exposure_param);
@@ -81,9 +81,10 @@ void capture_param_callback() {
     interval = param_get_uint32(&interval_param);
     obid = param_get_uint32(&obid_param);
     pipeline_id = param_get_uint32(&pipeline_id_param);
-    */
+    
 
     
+    /*
     strcpy(camera_id, "1800 U-500c");  // Use actual camera
     camera_type = 0;  // VMB camera type
     exposure = 50000;  // Increased from 5ms to 50ms for much brighter images
@@ -92,6 +93,7 @@ void capture_param_callback() {
     interval = 0;
     obid = 0;
     pipeline_id = 0;
+    */
     
         
     pthread_cond_signal(&cond);
