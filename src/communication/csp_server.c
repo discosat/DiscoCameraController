@@ -21,7 +21,6 @@
 #include <csp/drivers/usart.h>
 #include <sys/types.h>
 #include <errors.hpp>
-
 #include <errno.h> // for system errors
 
 /*
@@ -59,6 +58,53 @@ void* router_task(void* param) {
         csp_route_work();
     }
     return NULL;
+}
+
+
+void camera_state_param_callback() {
+    uint8_t camera_state = param_get_uint8(&camera_state_param);
+    uint8_t camera_type = param_get_uint8(&camera_type_param);
+    
+    const char *camera_names[] = {"VMB", "IR", "TEST"};
+    const char *camera_name = (camera_type <= 2) ? camera_names[camera_type] : "UNKNOWN";
+    
+    printf("Camera state change: %s camera -> %s\n", camera_name, camera_state ? "ON" : "OFF");
+    
+    char gpio_cmd[256];
+    
+    if (camera_state == 0) {
+        // Turn off camera: pin0=0, pin1=0
+        snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=0 0=0");
+        printf("Turning off %s camera: %s\n", camera_name, gpio_cmd);
+    } else {
+        // Turn on camera based on camera_type_param
+        switch (camera_type) {
+            case 0: // VMB: pin0=1, pin1=0
+                snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=0 0=1");
+                printf("Turning on VMB camera: %s\n", gpio_cmd);
+                break;
+            case 1: // IR: pin0=0, pin1=1  
+                snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1 0=0");
+                printf("Turning on IR camera: %s\n", gpio_cmd);
+                break;
+            case 2: // TEST: pin0=1, pin1=1
+                snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1 0=1");
+                printf("Turning on TEST camera: %s\n", gpio_cmd);
+                break;
+            default:
+                printf("Invalid camera type: %u\n", camera_type);
+                return;
+        }
+    }
+    
+    // Execute the GPIO command
+    int result = system(gpio_cmd);
+    if (result == 0) {
+        printf("GPIO pins successfully configured for %s camera (%s)\n", 
+               camera_name, camera_state ? "ON" : "OFF");
+    } else {
+        printf("Failed to configure GPIO pins. Command result: %d\n", result);
+    }
 }
 
 void capture_param_callback() {

@@ -53,6 +53,9 @@ PARAM_DEFINE_STATIC_VMEM(
 
 // Camera type
 
+// Forward declaration of camera callback
+void camera_state_param_callback();
+
 PARAM_DEFINE_STATIC_VMEM(
     PARAMID_CAMERA_TYPE_PARAM,
     camera_type_param,
@@ -65,6 +68,21 @@ PARAM_DEFINE_STATIC_VMEM(
     config,
     VMEM_CONF_CAMERA_TYPE_PARAM,
     "The camera type to capture with, by default VMB"
+);
+
+// Camera State Parameter (on/off for current camera type)
+PARAM_DEFINE_STATIC_VMEM(
+    PARAMID_CAMERA_STATE_PARAM,
+    camera_state_param,
+    PARAM_TYPE_UINT8,
+    -1,
+    0,
+    PM_CONF,
+    camera_state_param_callback,
+    NULL,
+    config,
+    VMEM_CONF_CAMERA_STATE_PARAM,
+    "Camera state: 0=off, 1=on (uses camera_type_param to determine which camera)"
 );
 
 // Exposure
