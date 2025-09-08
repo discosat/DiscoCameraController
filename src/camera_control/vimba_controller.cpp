@@ -174,17 +174,65 @@ FramePtr VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, fl
         pOffsetY->SetValue(0);
     }
     
-    // Set width and height to maximum available
+    // Set to maximum sensor resolution for full image capture
     VmbInt64_t minWidth, maxWidth, minHeight, maxHeight;
     if (cam->GetFeatureByName("Width", pWidth) == VmbErrorSuccess) {
         if (pWidth->GetRange(minWidth, maxWidth) == VmbErrorSuccess) {
-            pWidth->SetValue(maxWidth);
+            // Use full width for complete image capture
+            VmbInt64_t fullWidth = maxWidth;
+            // Ensure proper alignment based on pixel format
+            // For 12-bit packed: width should be even (2 pixels per 3 bytes)
+            fullWidth = (fullWidth / 2) * 2;  // Even alignment for 12-bit packed
+            pWidth->SetValue(fullWidth);
+            std::cout << "Set width to " << fullWidth << " (full sensor width)" << std::endl;
         }
     }
     if (cam->GetFeatureByName("Height", pHeight) == VmbErrorSuccess) {
         if (pHeight->GetRange(minHeight, maxHeight) == VmbErrorSuccess) {
-            pHeight->SetValue(maxHeight);
+            // Use full height for complete image capture
+            VmbInt64_t fullHeight = maxHeight;
+            // Ensure height is multiple of 2 for proper alignment
+            fullHeight = (fullHeight / 2) * 2;
+            pHeight->SetValue(fullHeight);
+            std::cout << "Set height to " << fullHeight << " (full sensor height)" << std::endl;
         }
+    }
+    
+    // Configure USB specific settings for reliable data transfer
+    FeaturePtr pDeviceLinkThroughputLimit;
+    err = cam->GetFeatureByName("DeviceLinkThroughputLimit", pDeviceLinkThroughputLimit);
+    if (err == VmbErrorSuccess) {
+        // Very conservative bandwidth for USB2 to ensure complete transfer
+        VmbInt64_t limitValue = 20000000; // 20 MB/s for USB2 compatibility
+        err = pDeviceLinkThroughputLimit->SetValue(limitValue);
+        if (err == VmbErrorSuccess) {
+            std::cout << "Set USB bandwidth limit to " << limitValue << " bytes/sec" << std::endl;
+        }
+    }
+    
+    // Set packet size for USB2 compatibility
+    FeaturePtr pPacketSize;
+    err = cam->GetFeatureByName("GVSPPacketSize", pPacketSize);
+    if (err != VmbErrorSuccess) {
+        // Try alternative packet size feature name for USB cameras
+        err = cam->GetFeatureByName("PacketSize", pPacketSize);
+    }
+    if (err == VmbErrorSuccess) {
+        VmbInt64_t minPacket, maxPacket;
+        if (pPacketSize->GetRange(minPacket, maxPacket) == VmbErrorSuccess) {
+            // Use smaller, safer packet size for USB2
+            VmbInt64_t usbPacketSize = std::min((VmbInt64_t)512, maxPacket);
+            pPacketSize->SetValue(usbPacketSize);
+            std::cout << "Set packet size to " << usbPacketSize << " bytes for USB2" << std::endl;
+        }
+    }
+    
+    // Set stream buffer count for USB2
+    FeaturePtr pStreamBufferCount;
+    err = cam->GetFeatureByName("StreamBufferCount", pStreamBufferCount);
+    if (err == VmbErrorSuccess) {
+        pStreamBufferCount->SetValue(10); // More buffers for USB2 reliability
+        std::cout << "Set stream buffer count to 10 for USB2" << std::endl;
     }
     
     FeaturePtr pFormatFeature;
@@ -219,7 +267,8 @@ FramePtr VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, fl
     }
 
     FramePtr frame;
-    err = cam->AcquireSingleImage(frame, 5000);
+    // Increase timeout significantly for USB2 to allow for slower data transfer
+    err = cam->AcquireSingleImage(frame, 30000); // 30 seconds timeout for USB2
 
     if (err != VmbErrorSuccess)
     {
@@ -292,6 +341,19 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
                 return images;
             }
 
+            // Validate frame completeness before processing
+            VmbFrameStatusType frameStatus;
+            if (frame->GetReceiveStatus(frameStatus) == VmbErrorSuccess) {
+                if (frameStatus != VmbFrameStatusComplete) {
+                    std::cerr << "Warning: Frame not complete! Status: " << frameStatus << std::endl;
+                    if (frameStatus == VmbFrameStatusIncomplete) {
+                        throw std::runtime_error("Frame incomplete - possible USB transfer issue");
+                    }
+                }
+            } else {
+                std::cerr << "Warning: Could not get frame status" << std::endl;
+            }
+            
             u_int width, height, bufferSize;
             frame->GetBufferSize(bufferSize);
             frame->GetWidth(width);
@@ -306,10 +368,24 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
             int bitsPerPixel = getBitsPerPixelFromFormat(pixelFormat);
             int channels = getChannelsFromFormat(pixelFormat);
             
+            // Calculate expected buffer size for validation
+            size_t expectedSize;
+            if (bitsPerPixel == 12) {
+                // For 12-bit packed: each 2 pixels use 3 bytes
+                expectedSize = ((width * height + 1) / 2) * 3;
+            } else {
+                expectedSize = width * height * channels * ((bitsPerPixel + 7) / 8);
+            }
             
+            // Validate buffer size matches expected size
+            if (bufferSize != expectedSize) {
+                std::cout << "Buffer size validation: Expected " << expectedSize 
+                          << ", Got " << bufferSize 
+                          << " (difference: " << (int64_t)bufferSize - (int64_t)expectedSize << ")" << std::endl;
+            }
 
             Image img;
-            img.size = bufferSize;
+            img.size = bufferSize;  // Use actual buffer size from VimbaX
             img.width = width;
             img.height = height;
             img.data = new u_char[bufferSize];
@@ -322,10 +398,18 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
                       << ", channels: " << channels
                       << ", width: " << width 
                       << ", height: " << height 
-                      << ", buffer size: " << bufferSize << " bytes" << std::endl;
+                      << ", buffer size: " << bufferSize << " bytes" 
+                      << ", expected: " << expectedSize << " bytes" << std::endl;
             
             // Copy the actual image data from buffer to img.data
             std::memcpy(img.data, buffer, bufferSize);
+            
+            // Validate that the buffer contains reasonable data
+            size_t nonZeroBytes = 0;
+            for (size_t i = 0; i < std::min(bufferSize, (u_int)1000); i++) {
+                if (buffer[i] != 0) nonZeroBytes++;
+            }
+            std::cout << "Buffer validation: " << nonZeroBytes << "/1000 bytes non-zero in first 1KB" << std::endl;
 
       	    std::ofstream outfile("buffer_dump.bin", std::ios::binary);
 	    if (outfile.is_open()) {

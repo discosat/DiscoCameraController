@@ -5,4 +5,4 @@
 [submodule "lib/param"]
 	path = lib/param
 	url = https://github.com/spaceinventor/libparam/
-	branch = 59d3eb12d562582e37140e470afb71ce9bb18f8f
+	branch = 768970c6320a455250ddd88903bbd9f58db81216

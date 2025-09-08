@@ -133,8 +133,8 @@ void capture_param_callback() {
     /*
     strcpy(camera_id, "1800 U-500c");  // Use actual camera
     camera_type = 0;  // VMB camera type
-    exposure = 50000;  // Increased from 5ms to 50ms for much brighter images
-    iso = 4.0;         // Increased from 1.0 to 4.0 for 4x gain boost
+    exposure = 10000;  // Reduced from 50ms to 10ms to prevent overexposure
+    iso = 2.0;         // Reduced from 4.0 to 2.0 for moderate gain
     num_images = 1;
     interval = 0;
     obid = 0;

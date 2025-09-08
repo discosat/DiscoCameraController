@@ -10,7 +10,8 @@
 #include "common.hpp"
 #include "message_queue.hpp"
 
-extern "C" {
+extern "C"
+{
 #include "csp_server.h"
 }
 
@@ -19,8 +20,10 @@ namespace fs = std::filesystem;
 using namespace std::chrono;
 
 std::string_view get_option(const std::vector<std::string_view> &args,
-                            const std::string_view &option_name) {
-  for (auto it = args.begin(), end = args.end(); it != end; ++it) {
+                            const std::string_view &option_name)
+{
+  for (auto it = args.begin(), end = args.end(); it != end; ++it)
+  {
     if (*it == option_name)
       if (it + 1 != end)
         return *(it + 1);
@@ -30,8 +33,10 @@ std::string_view get_option(const std::vector<std::string_view> &args,
 }
 
 bool has_option(const std::vector<std::string_view> &args,
-                const std::string_view &option_name) {
-  for (auto it = args.begin(), end = args.end(); it != end; ++it) {
+                const std::string_view &option_name)
+{
+  for (auto it = args.begin(), end = args.end(); it != end; ++it)
+  {
     if (*it == option_name)
       return true;
   }
@@ -39,19 +44,22 @@ bool has_option(const std::vector<std::string_view> &args,
   return false;
 }
 
-std::vector<std::string> split_string(std::string input) {
+std::vector<std::string> split_string(std::string input)
+{
   std::istringstream iss(input);
   std::string word;
   std::vector<std::string> words;
 
-  while (std::getline(iss, word, ',')) {
+  while (std::getline(iss, word, ','))
+  {
     words.push_back(word);
   }
 
   return words;
 }
 
-void print_usage() {
+void print_usage()
+{
   std::string help =
       R"""(Usage: Disco2CameraControl -i INTERFACE -p DEVICE -a NODE
 
@@ -75,11 +83,13 @@ Optional:
   std::cout << help << std::endl;
 }
 
-int main(int argc, char *argv[], char *envp[]) {
+int main(int argc, char *argv[], char *envp[])
+{
   // parse arguments
   const std::vector<std::string_view> args(argv, argv + argc);
 
-  if (has_option(args, "-h")) {
+  if (has_option(args, "-h"))
+  {
     print_usage();
     return 0;
   }
@@ -94,25 +104,45 @@ int main(int argc, char *argv[], char *envp[]) {
   int node = 2, port = 10;
   std::string device = "localhost", interface = "zmq";
 
-  if (node_arg.size() > 0) {
+  if (node_arg.size() > 0)
+  {
     node = std::atoi(std::string(node_arg).c_str());
   }
 
-  if (port_arg.size() > 0) {
+  if (port_arg.size() > 0)
+  {
     port = std::atoi(std::string(port_arg).c_str());
   }
 
-  if (device_arg.size() > 0) {
+  if (device_arg.size() > 0)
+  {
     device = std::string(device_arg);
   }
 
-  if (interface_arg.size() > 0) {
+  if (interface_arg.size() > 0)
+  {
     interface = std::string(interface_arg);
   }
 
   CaptureController *captureController = new CaptureController();
-
-  if (!debug) {
+  /*
+  // Take a picture immediately and exit
+  std::cout << "Taking picture..." << std::endl;
+  char camera_id[] = "1800 U-500c";
+  uint8_t camera_type = 0;  // VMB camera type
+  uint32_t exposure = 1000; // 1ms exposure for proper exposure
+  double iso = 1.0;         // Standard gain
+  uint32_t num_images = 1;
+  uint32_t interval = 0;
+  uint32_t obid = 0;
+  uint32_t pipeline_id = 0;
+  u_int16_t error = 0;
+  
+  captureController->CaptureCallback(camera_id, camera_type, exposure, iso, num_images, interval, obid, pipeline_id, captureController, &error);
+  std::cout << "Picture capture completed with error code: " << error << std::endl;
+  */
+  if (!debug)
+  {
     CSPInterface interfaceConfig;
     interfaceConfig.Interface = StringToCSPInterface(interface.c_str());
     interfaceConfig.Device = device.c_str();
