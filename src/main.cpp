@@ -12,6 +12,7 @@
 
 extern "C" {
 #include "csp_server.h"
+#include "temperature_bridge.h"
 }
 
 namespace fs = std::filesystem;
@@ -112,6 +113,9 @@ int main(int argc, char *argv[], char *envp[]) {
 
   CaptureController *captureController = new CaptureController();
 
+  // Initialize temperature controller
+  init_temperature_controller();
+
   if (!debug) {
     CSPInterface interfaceConfig;
     interfaceConfig.Interface = StringToCSPInterface(interface.c_str());
@@ -129,6 +133,8 @@ int main(int argc, char *argv[], char *envp[]) {
   //     captureController, &error);
   // }
 
+  // Cleanup temperature controller
+  cleanup_temperature_controller();
   delete captureController;
   return 0;
 }

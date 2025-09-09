@@ -19,12 +19,14 @@ class VimbaController: public CameraController {
         bool turnOffCamera(VmbCPP::CameraPtr cam);
         int getBitsPerPixelFromFormat(VmbPixelFormatType format);
         int getChannelsFromFormat(VmbPixelFormatType format);
+        bool readCameraTemperature(VmbCPP::CameraPtr cam, double& temperature);
 
     public:
         VimbaController();
         ~VimbaController() override;
 
         std::vector<Image> Capture(CaptureMessage& capture_instructions, u_int16_t* error) override;
+        bool updateTemperatureParameter();
 };
 
 #endif

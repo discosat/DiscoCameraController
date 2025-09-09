@@ -6,6 +6,7 @@ extern param_t capture_param;
 extern param_t camera_id_param;
 extern param_t camera_type_param;
 extern param_t camera_state_param;
+extern param_t camera_temperature_param;
 extern param_t exposure_param;
 extern param_t iso_param;
 extern param_t num_images_param;
@@ -20,13 +21,14 @@ extern param_t error_log;
 #define PARAMID_CAMERA_ID_PARAM     2 
 #define PARAMID_CAMERA_TYPE_PARAM   3 
 #define PARAMID_CAMERA_STATE_PARAM  4
-#define PARAMID_EXPOSURE_PARAM      5
-#define PARAMID_ISO_PARAM           6
-#define PARAMID_NUM_IMAGES_PARAM    7
-#define PARAMID_INTERVAL_PARAM      8
-#define PARAMID_OBID_PARAM          9
-#define PARAMID_PIPELINE_ID_PARAM   10
-#define PARAMID_ERROR_LOG           11
+#define PARAMID_CAMERA_TEMPERATURE_PARAM 5
+#define PARAMID_EXPOSURE_PARAM      6
+#define PARAMID_ISO_PARAM           7
+#define PARAMID_NUM_IMAGES_PARAM    8
+#define PARAMID_INTERVAL_PARAM      9
+#define PARAMID_OBID_PARAM          10
+#define PARAMID_PIPELINE_ID_PARAM   11
+#define PARAMID_ERROR_LOG           12
 
 #define PARAM_MAX_SIZE 512
 

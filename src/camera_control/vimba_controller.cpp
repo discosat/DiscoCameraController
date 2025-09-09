@@ -9,6 +9,7 @@
 #include <memory>
 #include <cstring>
 #include <fstream>
+#include "param_config.h"
 
 using namespace VmbCPP;
 
@@ -99,6 +100,46 @@ int VimbaController::getChannelsFromFormat(VmbPixelFormatType format) {
             std::cerr << "Unknown pixel format, defaulting to 1 channel" << std::endl;
             return 1;
     }
+}
+
+bool VimbaController::readCameraTemperature(VmbCPP::CameraPtr cam, double& temperature) {
+    if (cam == nullptr) {
+        return false;
+    }
+    
+    // Try common temperature feature names used by different camera manufacturers
+    std::vector<std::string> temperatureFeatureNames = {
+        "DeviceTemperature",
+        "DeviceTemperatureSelector",
+        "SensorTemperature", 
+        "CameraTemperature",
+        "Temperature"
+    };
+    
+    for (const auto& featureName : temperatureFeatureNames) {
+        FeaturePtr tempFeature;
+        VmbErrorType err = cam->GetFeatureByName(featureName.c_str(), tempFeature);
+        
+        if (err == VmbErrorSuccess) {
+            // Try to read as double first
+            double tempValue;
+            err = tempFeature->GetValue(tempValue);
+            if (err == VmbErrorSuccess) {
+                temperature = tempValue;
+                return true;
+            }
+            
+            // If double fails, try as int64
+            VmbInt64_t tempValueInt;
+            err = tempFeature->GetValue(tempValueInt);
+            if (err == VmbErrorSuccess) {
+                temperature = static_cast<double>(tempValueInt);
+                return true;
+            }
+        }
+    }
+    
+    return false;
 }
 
 std::vector<CameraPtr> VimbaController::getCameras(){
@@ -393,4 +434,38 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
     }
 
     return images;
+}
+
+bool VimbaController::updateTemperatureParameter() {
+    std::vector<VmbCPP::CameraPtr> cameras = this->getCameras();
+    
+    if (cameras.empty()) {
+        std::cerr << "No cameras available for temperature reading" << std::endl;
+        return false;
+    }
+    
+    // Use the first available camera for temperature reading
+    VmbCPP::CameraPtr cam = cameras[0];
+    
+    VmbErrorType openErr = cam->Open(VmbAccessModeExclusive);
+    if (openErr != VmbErrorSuccess) {
+        std::cerr << "Failed to open camera for temperature reading. Error code: " << openErr << std::endl;
+        return false;
+    }
+    
+    double temperature;
+    bool success = false;
+    
+    if (readCameraTemperature(cam, temperature)) {
+        param_set_double(&camera_temperature_param, temperature);
+        std::cout << "Camera temperature updated: " << temperature << "°C" << std::endl;
+        success = true;
+    } else {
+        std::cout << "Warning: Could not read camera temperature" << std::endl;
+    }
+    
+    // Close the camera
+    cam->Close();
+    
+    return success;
 }

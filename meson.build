@@ -31,6 +31,7 @@ sources = files([
     'src/communication/param_config.c',
     'src/communication/serial.c',
     'src/communication/vmem_config.c',
+    'src/communication/temperature_bridge.cpp',
 ])
 
 cpp = meson.get_compiler('cpp')

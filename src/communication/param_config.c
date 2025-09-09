@@ -85,6 +85,21 @@ PARAM_DEFINE_STATIC_VMEM(
     "Camera state: 0=off, 1=on (uses camera_type_param to determine which camera)"
 );
 
+// Camera Temperature Parameter
+PARAM_DEFINE_STATIC_VMEM(
+    PARAMID_CAMERA_TEMPERATURE_PARAM,
+    camera_temperature_param,
+    PARAM_TYPE_DOUBLE,
+    -1,
+    0,
+    PM_READONLY,
+    NULL,
+    NULL,
+    config,
+    VMEM_CONF_CAMERA_TEMPERATURE_PARAM,
+    "Current camera temperature in degrees Celsius"
+);
+
 // Exposure
 
 PARAM_DEFINE_STATIC_VMEM(

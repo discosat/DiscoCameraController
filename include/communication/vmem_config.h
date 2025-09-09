@@ -8,6 +8,7 @@ extern vmem_t vmem_config;
 #define VMEM_CONF_CAMERA_ID_PARAM 0xc8 // 0x100     // 256 bytes
 #define VMEM_CONF_CAMERA_TYPE_PARAM 0x320  // 0x008   // 1 byte
 #define VMEM_CONF_CAMERA_STATE_PARAM 0x321 // 0x009  // 1 byte
+#define VMEM_CONF_CAMERA_TEMPERATURE_PARAM 0x322 // 0x00A  // 8 bytes
 #define VMEM_CONF_EXPOSURE_PARAM 0x384  // 0x010      // 4 bytes
 #define VMEM_CONF_ISO_PARAM 0x3e8  // 0x030           // 8 bytes
 #define VMEM_CONF_NUM_IMAGES_PARAM 0x44c  // 0x070    // 4 bytes
