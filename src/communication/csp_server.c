@@ -1,10 +1,10 @@
 #include "csp_server.h"
 
 #include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <signal.h>
 
 #include <csp/csp.h>
 #include <csp/interfaces/csp_if_zmqhub.h>
@@ -12,20 +12,19 @@
 #include <vmem/vmem_file.h>
 #include <vmem/vmem_server.h>
 
-#include "vmem_config.h"
 #include "param_config.h"
-#include <csp/interfaces/csp_if_can.h>
-#include <csp/interfaces/csp_if_kiss.h>
-#include <csp/drivers/usart.h>
+#include "vmem_config.h"
 #include <csp/drivers/can_socketcan.h>
 #include <csp/drivers/usart.h>
-#include <sys/types.h>
-#include <errors.hpp>
+#include <csp/interfaces/csp_if_can.h>
+#include <csp/interfaces/csp_if_kiss.h>
 #include <errno.h> // for system errors
+#include <errors.hpp>
+#include <sys/types.h>
 
 /*
     Error codes for "errno" can be found here:
-    https://gist.github.com/greggyNapalm/2413028 
+    https://gist.github.com/greggyNapalm/2413028
 */
 
 // shared resources and mutexes
@@ -44,206 +43,209 @@ pthread_cond_t cond;
 // For catching ctrl-c
 static volatile int _RUNNING = 1;
 void intHandler(int _) {
-    _RUNNING = 0;
-    pthread_cond_signal(&cond);
+  _RUNNING = 0;
+  pthread_cond_signal(&cond);
 }
 
-void* vmem_server_task(void* param) {
-    vmem_server_loop(param);
-    return NULL;
+void *vmem_server_task(void *param) {
+  vmem_server_loop(param);
+  return NULL;
 }
 
-void* router_task(void* param) {
-    while (1) {
-        csp_route_work();
-    }
-    return NULL;
+void *router_task(void *param) {
+  while (1) {
+    csp_route_work();
+  }
+  return NULL;
 }
-
 
 void camera_state_param_callback() {
-    uint8_t camera_state = param_get_uint8(&camera_state_param);
-    uint8_t camera_type = param_get_uint8(&camera_type_param);
-    
-    const char *camera_names[] = {"VMB", "IR", "TEST"};
-    const char *camera_name = (camera_type <= 2) ? camera_names[camera_type] : "UNKNOWN";
-    
-    printf("Camera state change: %s camera -> %s\n", camera_name, camera_state ? "ON" : "OFF");
-    
-    char gpio_cmd[256];
-    
-    if (camera_state == 0) {
-        // Turn off camera: pin0=0, pin1=0
-        snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=0 0=0");
-        printf("Turning off %s camera: %s\n", camera_name, gpio_cmd);
-    } else {
-        // Turn on camera based on camera_type_param
-        switch (camera_type) {
-            case 0: // VMB: pin0=1, pin1=0
-                snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=0 0=1");
-                printf("Turning on VMB camera: %s\n", gpio_cmd);
-                break;
-            case 1: // IR: pin0=0, pin1=1  
-                snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1 0=0");
-                printf("Turning on IR camera: %s\n", gpio_cmd);
-                break;
-            case 2: // TEST: pin0=1, pin1=1
-                snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1 0=1");
-                printf("Turning on TEST camera: %s\n", gpio_cmd);
-                break;
-            default:
-                printf("Invalid camera type: %u\n", camera_type);
-                return;
-        }
-    }
-    
-    // Execute the GPIO command
-    int result = system(gpio_cmd);
-    if (result == 0) {
-        printf("GPIO pins successfully configured for %s camera (%s)\n", 
-               camera_name, camera_state ? "ON" : "OFF");
-    } else {
-        printf("Failed to configure GPIO pins. Command result: %d\n", result);
-    }
+  uint8_t camera_state = param_get_uint8(&camera_state_param);
+  uint8_t camera_type = param_get_uint8(&camera_type_param);
+
+  const char *camera_names[] = {"OFF", "Camera 1", "Camera 2", "Camera 3"};
+  const char *camera_name =
+      (camera_state <= 3) ? camera_names[camera_state] : "UNKNOWN";
+
+  printf("Camera state change: %s\n", camera_name);
+
+  char gpio_cmd[256];
+
+  // Set GPIO pins based on camera_state (matching the truth table)
+  switch (camera_state) {
+  case 0: // OFF: pin1=0, pin0=0
+    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=0 0=0");
+    printf("Turning off all cameras: %s\n", gpio_cmd);
+    break;
+  case 1: // Camera 1: pin1=0, pin0=1
+    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=0 0=1");
+    printf("Turning on Camera 1: %s\n", gpio_cmd);
+    break;
+  case 2: // Camera 2: pin1=1, pin0=0
+    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1 0=0");
+    printf("Turning on Camera 2: %s\n", gpio_cmd);
+    break;
+  case 3: // Camera 3: pin1=1, pin0=1
+    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1 0=1");
+    printf("Turning on Camera 3: %s\n", gpio_cmd);
+    break;
+  default:
+    printf("Invalid camera state: %u\n", camera_state);
+    return;
+  }
+
+  // Execute the GPIO command
+  int result = system(gpio_cmd);
+  if (result == 0) {
+    printf("GPIO pins successfully configured for %s\n", camera_name);
+  } else {
+    printf("Failed to configure GPIO pins. Command result: %d\n", result);
+  }
 }
 
 void capture_param_callback() {
-    
-    uint8_t param_value = param_get_uint8(&capture_param);
 
+  uint8_t param_value = param_get_uint8(&capture_param);
 
-    if (!param_value)
-        return;
-    capture = param_get_uint8(&capture_param);
-    
-    pthread_mutex_lock(&mutex);
+  if (!param_value)
+    return;
+  capture = param_get_uint8(&capture_param);
 
-    
-    param_get_string(&camera_id_param, camera_id, CAMERA_ID_MAX_LENGTH);
-    camera_type = param_get_uint8(&camera_type_param);
-    exposure = param_get_uint32(&exposure_param);
-    iso = param_get_double(&iso_param);
-    num_images = param_get_uint32(&num_images_param);
-    interval = param_get_uint32(&interval_param);
-    obid = param_get_uint32(&obid_param);
-    pipeline_id = param_get_uint32(&pipeline_id_param);
-    
+  pthread_mutex_lock(&mutex);
 
-    
-    /*
-    strcpy(camera_id, "1800 U-500c");  // Use actual camera
-    camera_type = 0;  // VMB camera type
-    exposure = 50000;  // Increased from 5ms to 50ms for much brighter images
-    iso = 4.0;         // Increased from 1.0 to 4.0 for 4x gain boost
-    num_images = 1;
-    interval = 0;
-    obid = 0;
-    pipeline_id = 0;
-    */
-    
-        
-    pthread_cond_signal(&cond);
-    pthread_mutex_unlock(&mutex);
+  param_get_string(&camera_id_param, camera_id, CAMERA_ID_MAX_LENGTH);
+  camera_type = param_get_uint8(&camera_type_param);
+  exposure = param_get_uint32(&exposure_param);
+  iso = param_get_double(&iso_param);
+  num_images = param_get_uint32(&num_images_param);
+  interval = param_get_uint32(&interval_param);
+  obid = param_get_uint32(&obid_param);
+  pipeline_id = param_get_uint32(&pipeline_id_param);
+
+  /*
+  strcpy(camera_id, "1800 U-500c");  // Use actual camera
+  camera_type = 0;  // VMB camera type
+  exposure = 50000;  // Increased from 5ms to 50ms for much brighter images
+  iso = 4.0;         // Increased from 1.0 to 4.0 for 4x gain boost
+  num_images = 1;
+  interval = 0;
+  obid = 0;
+  pipeline_id = 0;
+  */
+
+  pthread_cond_signal(&cond);
+  pthread_mutex_unlock(&mutex);
 }
 
 static void csp_init_fun(void) {
-    csp_conf.hostname = "Camera";
-    csp_conf.model = "DISCO-II";
-    csp_conf.revision = "1";
-	csp_conf.version = 2;
-	csp_conf.dedup = CSP_DEDUP_OFF;
+  csp_conf.hostname = "Camera";
+  csp_conf.model = "DISCO-II";
+  csp_conf.revision = "1";
+  csp_conf.version = 2;
+  csp_conf.dedup = CSP_DEDUP_OFF;
 
-    csp_init();
+  csp_init();
 
-    csp_bind_callback(csp_service_handler, CSP_ANY);
-    csp_bind_callback(param_serve, PARAM_PORT_SERVER);
+  csp_bind_callback(csp_service_handler, CSP_ANY);
+  csp_bind_callback(param_serve, PARAM_PORT_SERVER);
 
-    static pthread_t vmem_server_handle;
-    pthread_create(&vmem_server_handle, NULL, &vmem_server_task, NULL);
+  static pthread_t vmem_server_handle;
+  pthread_create(&vmem_server_handle, NULL, &vmem_server_task, NULL);
 
-    static pthread_t router_handle;
-    pthread_create(&router_handle, NULL, &router_task, NULL);
+  static pthread_t router_handle;
+  pthread_create(&router_handle, NULL, &router_task, NULL);
 
-    // static pthread_t onehz_handle;
-    // pthread_create(&onehz_handle, NULL, &onehz_task, NULL);
+  // static pthread_t onehz_handle;
+  // pthread_create(&onehz_handle, NULL, &onehz_task, NULL);
 }
 
 /// @brief Initialize communication interfaces: ZMQ, CAN and KISS
 /// @param interfaceConfig configuration parameters
 static void iface_init(CSPInterface *interfaceConfig) {
-    int error = CSP_ERR_NONE;
-    csp_iface_t * default_iface = NULL;
+  int error = CSP_ERR_NONE;
+  csp_iface_t *default_iface = NULL;
 
-    switch (interfaceConfig->Interface)
-    {
-    case ZMQ:
-        error = csp_zmqhub_init_filter2("zmq", interfaceConfig->Device, interfaceConfig->Node, 8, true, &default_iface, NULL, CSP_ZMQPROXY_SUBSCRIBE_PORT, CSP_ZMQPROXY_PUBLISH_PORT);
-        csp_print("Value of errno: %d\n", errno);
-        default_iface->name = "zmq";
-        break;
-    case CAN:
-        error = csp_can_socketcan_open_and_add_interface(interfaceConfig->Device, "CAN", interfaceConfig->Node, 0, 0, &default_iface);
-        csp_print("Value of errno: %d\n", errno);
-        default_iface->name = "CAN";
-        break;
-    case KISS:
-        csp_usart_conf_t conf = {
-            .device = interfaceConfig->Device,
-            .baudrate = 115200, /* supported on all platforms */
-            .databits = 8,
-            .stopbits = 1,
-            .paritysetting = 0,
-        };
-        error = csp_usart_open_and_add_kiss_interface(&conf, CSP_IF_KISS_DEFAULT_NAME,  &default_iface);
-        default_iface->addr = interfaceConfig->Node;
-        csp_print("Value of errno: %d\n", errno);
-        default_iface->name = "kiss";
-        break;
-    }
-
-    if (error != CSP_ERR_NONE) {
-        csp_print("failed to add interface [%s], error: %d\n", interfaceConfig->Device, error);
-        exit(1);
-    } else {
-        csp_print("Initialized interface:\n\t - Device: [%s]\n\t - Node: %i\n\t - Interface mode: %s\n", interfaceConfig->Device, interfaceConfig->Node, default_iface->name);
-    }
-
-    default_iface->is_default = 1;
+  switch (interfaceConfig->Interface) {
+  case ZMQ:
+    error = csp_zmqhub_init_filter2(
+        "zmq", interfaceConfig->Device, interfaceConfig->Node, 8, true,
+        &default_iface, NULL, CSP_ZMQPROXY_SUBSCRIBE_PORT,
+        CSP_ZMQPROXY_PUBLISH_PORT);
+    csp_print("Value of errno: %d\n", errno);
+    default_iface->name = "zmq";
+    break;
+  case CAN:
+    error = csp_can_socketcan_open_and_add_interface(
+        interfaceConfig->Device, "CAN", interfaceConfig->Node, 0, 0,
+        &default_iface);
+    csp_print("Value of errno: %d\n", errno);
+    default_iface->name = "CAN";
+    break;
+  case KISS:
+    csp_usart_conf_t conf = {
+        .device = interfaceConfig->Device,
+        .baudrate = 115200, /* supported on all platforms */
+        .databits = 8,
+        .stopbits = 1,
+        .paritysetting = 0,
+    };
+    error = csp_usart_open_and_add_kiss_interface(
+        &conf, CSP_IF_KISS_DEFAULT_NAME, &default_iface);
     default_iface->addr = interfaceConfig->Node;
-	default_iface->netmask = 8;
-	csp_rtable_set(0, 0, default_iface, CSP_NO_VIA_ADDRESS);
-	csp_iflist_add(default_iface);
+    csp_print("Value of errno: %d\n", errno);
+    default_iface->name = "kiss";
+    break;
+  }
+
+  if (error != CSP_ERR_NONE) {
+    csp_print("failed to add interface [%s], error: %d\n",
+              interfaceConfig->Device, error);
+    exit(1);
+  } else {
+    csp_print("Initialized interface:\n\t - Device: [%s]\n\t - Node: %i\n\t - "
+              "Interface mode: %s\n",
+              interfaceConfig->Device, interfaceConfig->Node,
+              default_iface->name);
+  }
+
+  default_iface->is_default = 1;
+  default_iface->addr = interfaceConfig->Node;
+  default_iface->netmask = 8;
+  csp_rtable_set(0, 0, default_iface, CSP_NO_VIA_ADDRESS);
+  csp_iflist_add(default_iface);
 }
 
-void server_start(CSPInterface *interfaceConfig, CallbackFunc callback, void* obj) {
-    pthread_mutex_init(&mutex, NULL);
-    pthread_cond_init(&cond, NULL);
+void server_start(CSPInterface *interfaceConfig, CallbackFunc callback,
+                  void *obj) {
+  pthread_mutex_init(&mutex, NULL);
+  pthread_cond_init(&cond, NULL);
 
-    void serial_init(void);
-    serial_init();
+  void serial_init(void);
+  serial_init();
 
-    // Parameter storage
-    vmem_file_init(&vmem_config);
-    
-    // Interfaces
-    iface_init(interfaceConfig);
+  // Parameter storage
+  vmem_file_init(&vmem_config);
 
-    // Initialize CSP
-    csp_init_fun();
-    param_set_string(&capture_param, "", PARAM_MAX_SIZE);
+  // Interfaces
+  iface_init(interfaceConfig);
 
-    signal(SIGINT, intHandler);
-    while (_RUNNING) {
-        pthread_mutex_lock(&mutex);
-        pthread_cond_wait(&cond, &mutex);
-        u_int16_t error = 0;
+  // Initialize CSP
+  csp_init_fun();
+  param_set_string(&capture_param, "", PARAM_MAX_SIZE);
 
-        if(capture > 0 && _RUNNING){
-            csp_print("Using camera_id: %s\n", camera_id);
-            callback(camera_id, camera_type, exposure, iso, num_images, interval, obid, pipeline_id, obj, &error);
-            param_set_uint8(&capture_param, 0); // Reset to zero. 
-        } 
-        pthread_mutex_unlock(&mutex);
-        param_set_uint16(&error_log, error);
+  signal(SIGINT, intHandler);
+  while (_RUNNING) {
+    pthread_mutex_lock(&mutex);
+    pthread_cond_wait(&cond, &mutex);
+    u_int16_t error = 0;
+
+    if (capture > 0 && _RUNNING) {
+      csp_print("Using camera_id: %s\n", camera_id);
+      callback(camera_id, camera_type, exposure, iso, num_images, interval,
+               obid, pipeline_id, obj, &error);
+      param_set_uint8(&capture_param, 0); // Reset to zero.
     }
+    pthread_mutex_unlock(&mutex);
+    param_set_uint16(&error_log, error);
+  }
 }
