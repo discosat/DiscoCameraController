@@ -8,6 +8,7 @@ extern "C" {
 void init_temperature_controller();
 void cleanup_temperature_controller();
 void update_camera_temperature();
+void camera_temperature_callback();
 
 #ifdef __cplusplus
 }

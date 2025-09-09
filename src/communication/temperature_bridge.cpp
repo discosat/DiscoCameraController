@@ -1,15 +1,10 @@
 #include "vimba_controller.hpp"
 #include "param_config.h"
-#include <thread>
-#include <chrono>
-#include <atomic>
 #include <cstdlib>
 #include <iostream>
+#include <atomic>
 
-// Global VimbaController instance for temperature updates
-static VimbaController* g_vimba_controller = nullptr;
-static std::thread* g_temperature_thread = nullptr;
-static std::atomic<bool> g_temperature_thread_running(false);
+// Global shutdown tracking
 static std::atomic<bool> g_temperature_shutdown_triggered(false);
 
 const double TEMPERATURE_THRESHOLD = 65.0; // degrees Celsius
@@ -37,62 +32,46 @@ void emergency_shutdown_camera() {
     param_set_uint8(&camera_state_param, 0);
 }
 
-void temperature_update_loop() {
-    while (g_temperature_thread_running.load()) {
-        if (g_vimba_controller) {
-            // Update temperature parameter
-            bool success = g_vimba_controller->updateTemperatureParameter();
+// On-demand temperature reading with emergency shutdown check
+bool read_camera_temperature_on_demand() {
+    VimbaController temp_controller;
+    
+    try {
+        bool success = temp_controller.updateTemperatureParameter();
+        
+        if (success) {
+            // Check temperature threshold
+            double current_temp = param_get_double(&camera_temperature_param);
             
-            if (success) {
-                // Check temperature threshold
-                double current_temp = param_get_double(&camera_temperature_param);
-                
-                if (current_temp >= TEMPERATURE_THRESHOLD) {
-                    emergency_shutdown_camera();
-                    // Continue monitoring even after shutdown
-                }
+            if (current_temp >= TEMPERATURE_THRESHOLD) {
+                emergency_shutdown_camera();
             }
+            return true;
         }
-        // Update temperature every 1 second
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+    } catch (const std::exception& e) {
+        printf("Failed to read camera temperature: %s\n", e.what());
     }
+    return false;
 }
 
 extern "C" {
     void init_temperature_controller() {
-        try {
-            g_vimba_controller = new VimbaController();
-            g_temperature_thread_running.store(true);
-            g_temperature_thread = new std::thread(temperature_update_loop);
-            printf("Temperature controller initialized with 1-second updates and 65°C shutdown protection\n");
-        } catch (const std::exception& e) {
-            printf("Failed to initialize VimbaController for temperature updates: %s\n", e.what());
-            g_vimba_controller = nullptr;
-        }
+        printf("Temperature controller initialized (on-demand mode) with 65°C shutdown protection\n");
     }
     
     void cleanup_temperature_controller() {
-        if (g_temperature_thread) {
-            g_temperature_thread_running.store(false);
-            g_temperature_thread->join();
-            delete g_temperature_thread;
-            g_temperature_thread = nullptr;
-        }
-        if (g_vimba_controller) {
-            delete g_vimba_controller;
-            g_vimba_controller = nullptr;
-        }
         printf("Temperature controller cleaned up\n");
     }
     
     void update_camera_temperature() {
-        if (g_vimba_controller) {
-            bool success = g_vimba_controller->updateTemperatureParameter();
-            if (!success) {
-                printf("Failed to update camera temperature\n");
-            }
-        } else {
-            printf("VimbaController not initialized for temperature updates\n");
+        if (!read_camera_temperature_on_demand()) {
+            printf("Failed to update camera temperature\n");
         }
+    }
+    
+    void camera_temperature_callback() {
+        // This callback is triggered when someone accesses the temperature parameter
+        // We update the temperature on-demand rather than continuously
+        read_camera_temperature_on_demand();
     }
 }

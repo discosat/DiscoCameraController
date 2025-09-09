@@ -2,6 +2,7 @@
 #include "vmem_config.h"
 //#include "measure.h"
 #include "csp_server.h"
+#include "temperature_bridge.h"
 
 /*
 PARAM_DEFINE_STATIC_VMEM(
@@ -93,7 +94,7 @@ PARAM_DEFINE_STATIC_VMEM(
     -1,
     0,
     PM_READONLY,
-    NULL,
+    camera_temperature_callback,
     NULL,
     config,
     VMEM_CONF_CAMERA_TEMPERATURE_PARAM,
