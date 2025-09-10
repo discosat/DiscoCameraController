@@ -20,6 +20,7 @@ class VimbaController: public CameraController {
         int getBitsPerPixelFromFormat(VmbPixelFormatType format);
         int getChannelsFromFormat(VmbPixelFormatType format);
         bool readCameraTemperature(VmbCPP::CameraPtr cam, double& temperature);
+        bool saveImageAsPNG(u_char* buffer, u_int width, u_int height, int bitsPerPixel, VmbPixelFormatType pixelFormat, const std::string& filename);
 
     public:
         VimbaController();
