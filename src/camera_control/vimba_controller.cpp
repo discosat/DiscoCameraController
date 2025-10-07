@@ -9,9 +9,14 @@
 #include <memory>
 #include <cstring>
 #include <fstream>
-#include "param_config.h"
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
+
+// this should fix linking errors?
+extern "C" {
+    #include "param_config.h"
+    #include <param/param.h>
+}
 
 using namespace VmbCPP;
 

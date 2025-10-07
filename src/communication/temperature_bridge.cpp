@@ -1,8 +1,13 @@
 #include "vimba_controller.hpp"
-#include "param_config.h"
 #include <cstdlib>
 #include <iostream>
 #include <atomic>
+
+// this should fix linking errors?
+extern "C" {
+    #include "param_config.h"
+    #include <param/param.h>
+}
 
 // Global shutdown tracking
 static std::atomic<bool> g_temperature_shutdown_triggered(false);
