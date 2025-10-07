@@ -9,8 +9,6 @@
 #include <memory>
 #include <cstring>
 #include <fstream>
-#include <opencv2/opencv.hpp>
-#include <opencv2/imgproc.hpp>
 
 // this should fix linking errors?
 extern "C" {
@@ -149,79 +147,6 @@ bool VimbaController::readCameraTemperature(VmbCPP::CameraPtr cam, double& tempe
     return false;
 }
 
-bool VimbaController::saveImageAsPNG(u_char* buffer, u_int width, u_int height, int bitsPerPixel, VmbPixelFormatType pixelFormat, const std::string& filename) {
-    try {
-        cv::Mat image;
-        
-        if (pixelFormat == VmbPixelFormatRgb8) {
-            // RGB8 format - convert to grayscale
-            cv::Mat rgb_image(height, width, CV_8UC3, buffer);
-            cv::cvtColor(rgb_image, image, cv::COLOR_RGB2GRAY);
-        }
-        else if (pixelFormat == VmbPixelFormatMono8) {
-            // Mono8 format - direct grayscale
-            image = cv::Mat(height, width, CV_8UC1, buffer);
-        }
-        else if (pixelFormat == VmbPixelFormatMono12 || 
-                 pixelFormat == VmbPixelFormatBayerGR12 || 
-                 pixelFormat == VmbPixelFormatBayerRG12 ||
-                 pixelFormat == VmbPixelFormatBayerGB12 || 
-                 pixelFormat == VmbPixelFormatBayerBG12) {
-            // 12-bit formats - typically stored in 16-bit containers
-            // Most cameras store 12-bit data in 16-bit containers with the 12 bits left-aligned or right-aligned
-            
-            // Try interpreting as 16-bit data first (most common case)
-            cv::Mat temp(height, width, CV_16UC1, buffer);
-            
-            // Check if data looks like 12-bit in 16-bit containers
-            uint16_t* data16 = reinterpret_cast<uint16_t*>(buffer);
-            uint16_t maxVal = 0;
-            for (size_t i = 0; i < std::min((size_t)1000, (size_t)(width * height)); i++) {
-                maxVal = std::max(maxVal, data16[i]);
-            }
-            
-            if (maxVal > 4095) {
-                // Data appears to be left-aligned 12-bit (shifted left by 4)
-                // Scale from 16-bit range to 8-bit
-                temp.convertTo(image, CV_8UC1, 1.0/256.0);
-                std::cout << "Treating as left-aligned 12-bit data (max sample: " << maxVal << ")" << std::endl;
-            } else {
-                // Data appears to be right-aligned 12-bit (0-4095 range)
-                // Scale from 12-bit range to 8-bit
-                temp.convertTo(image, CV_8UC1, 1.0/16.0);
-                std::cout << "Treating as right-aligned 12-bit data (max sample: " << maxVal << ")" << std::endl;
-            }
-        }
-        else if (pixelFormat == VmbPixelFormatMono16 ||
-                 pixelFormat == VmbPixelFormatBayerGR16 || 
-                 pixelFormat == VmbPixelFormatBayerRG16 ||
-                 pixelFormat == VmbPixelFormatBayerGB16 || 
-                 pixelFormat == VmbPixelFormatBayerBG16) {
-            // 16-bit formats - scale down to 8-bit
-            cv::Mat temp(height, width, CV_16UC1, buffer);
-            temp.convertTo(image, CV_8UC1, 1.0/256.0);
-        }
-        else {
-            // Fallback: assume 8-bit mono
-            std::cout << "Warning: Unknown pixel format, treating as 8-bit mono" << std::endl;
-            image = cv::Mat(height, width, CV_8UC1, buffer);
-        }
-        
-        // Save as PNG
-        bool success = cv::imwrite(filename, image);
-        if (success) {
-            std::cout << "Image saved as " << filename << " (" << image.cols << "x" << image.rows << ")" << std::endl;
-        } else {
-            std::cerr << "Failed to save image as " << filename << std::endl;
-        }
-        return success;
-        
-    } catch (const cv::Exception& e) {
-        std::cerr << "OpenCV error saving image: " << e.what() << std::endl;
-        return false;
-    }
-}
-
 std::vector<CameraPtr> VimbaController::getCameras(){
     CameraPtrVector cams;
     VmbErrorType err = sys.GetCameras(cams);
@@ -295,65 +220,17 @@ FramePtr VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, fl
         pOffsetY->SetValue(0);
     }
     
-    // Set to maximum sensor resolution for full image capture
+    // Set width and height to maximum available
     VmbInt64_t minWidth, maxWidth, minHeight, maxHeight;
     if (cam->GetFeatureByName("Width", pWidth) == VmbErrorSuccess) {
         if (pWidth->GetRange(minWidth, maxWidth) == VmbErrorSuccess) {
-            // Use full width for complete image capture
-            VmbInt64_t fullWidth = maxWidth;
-            // Ensure proper alignment based on pixel format
-            // For 12-bit packed: width should be even (2 pixels per 3 bytes)
-            fullWidth = (fullWidth / 2) * 2;  // Even alignment for 12-bit packed
-            pWidth->SetValue(fullWidth);
-            std::cout << "Set width to " << fullWidth << " (full sensor width)" << std::endl;
+            pWidth->SetValue(maxWidth);
         }
     }
     if (cam->GetFeatureByName("Height", pHeight) == VmbErrorSuccess) {
         if (pHeight->GetRange(minHeight, maxHeight) == VmbErrorSuccess) {
-            // Use full height for complete image capture
-            VmbInt64_t fullHeight = maxHeight;
-            // Ensure height is multiple of 2 for proper alignment
-            fullHeight = (fullHeight / 2) * 2;
-            pHeight->SetValue(fullHeight);
-            std::cout << "Set height to " << fullHeight << " (full sensor height)" << std::endl;
+            pHeight->SetValue(maxHeight);
         }
-    }
-    
-    // Configure USB specific settings for reliable data transfer
-    FeaturePtr pDeviceLinkThroughputLimit;
-    err = cam->GetFeatureByName("DeviceLinkThroughputLimit", pDeviceLinkThroughputLimit);
-    if (err == VmbErrorSuccess) {
-        // Very conservative bandwidth for USB2 to ensure complete transfer
-        VmbInt64_t limitValue = 20000000; // 20 MB/s for USB2 compatibility
-        err = pDeviceLinkThroughputLimit->SetValue(limitValue);
-        if (err == VmbErrorSuccess) {
-            std::cout << "Set USB bandwidth limit to " << limitValue << " bytes/sec" << std::endl;
-        }
-    }
-    
-    // Set packet size for USB2 compatibility
-    FeaturePtr pPacketSize;
-    err = cam->GetFeatureByName("GVSPPacketSize", pPacketSize);
-    if (err != VmbErrorSuccess) {
-        // Try alternative packet size feature name for USB cameras
-        err = cam->GetFeatureByName("PacketSize", pPacketSize);
-    }
-    if (err == VmbErrorSuccess) {
-        VmbInt64_t minPacket, maxPacket;
-        if (pPacketSize->GetRange(minPacket, maxPacket) == VmbErrorSuccess) {
-            // Use smaller, safer packet size for USB2
-            VmbInt64_t usbPacketSize = std::min((VmbInt64_t)512, maxPacket);
-            pPacketSize->SetValue(usbPacketSize);
-            std::cout << "Set packet size to " << usbPacketSize << " bytes for USB2" << std::endl;
-        }
-    }
-    
-    // Set stream buffer count for USB2
-    FeaturePtr pStreamBufferCount;
-    err = cam->GetFeatureByName("StreamBufferCount", pStreamBufferCount);
-    if (err == VmbErrorSuccess) {
-        pStreamBufferCount->SetValue(10); // More buffers for USB2 reliability
-        std::cout << "Set stream buffer count to 10 for USB2" << std::endl;
     }
     
     FeaturePtr pFormatFeature;
@@ -388,8 +265,7 @@ FramePtr VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, fl
     }
 
     FramePtr frame;
-    // Increase timeout significantly for USB2 to allow for slower data transfer
-    err = cam->AcquireSingleImage(frame, 30000); // 30 seconds timeout for USB2
+    err = cam->AcquireSingleImage(frame, 5000);
 
     if (err != VmbErrorSuccess)
     {
@@ -497,9 +373,12 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
             // Copy the actual image data from buffer to img.data
             std::memcpy(img.data, buffer, bufferSize);
 
-            // Save image as grayscale PNG
-            std::string pngFilename = "captured_image_" + std::to_string(timestamp) + ".png";
-            saveImageAsPNG(buffer, width, height, bitsPerPixel, pixelFormat, pngFilename);
+      	    std::ofstream outfile("buffer_dump.bin", std::ios::binary);
+	    if (outfile.is_open()) {
+	        outfile.write(reinterpret_cast<const char*>(img.data), bufferSize);
+	        outfile.close();
+	        std::cout << "Buffer dumped to buffer_dump.bin (size: " << bufferSize << " bytes)" << std::endl;
+      	    }
             //std::memcpy(img.data, &buffer, bufferSize * sizeof(u_char));
 
             images.push_back(img);
