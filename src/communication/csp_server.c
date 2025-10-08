@@ -124,21 +124,21 @@ void set_camera_gpio(int camera_num, int state) {
 
   if (state == 0) {
     // Turn off all cameras
-    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=0 0=0");
+    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=0;gpioset gpiochip2 0=0");
     printf("Turning off all cameras\n");
   } else if (camera_num >= 1 && camera_num <= 3) {
     // Set GPIO pins based on camera number (matching the truth table)
     switch (camera_num) {
     case 1: // Camera 1 (U-507c): pin1=0, pin0=1
-      snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=0 0=1");
+      snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=0;gpioset gpiochip2 0=1");
       printf("Switching to %s\n", camera_names[1]);
       break;
     case 2: // Camera 2 (U-811c): pin1=1, pin0=0
-      snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1 0=0");
+      snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1;gpioset gpiochip2 0=0");
       printf("Switching to %s\n", camera_names[2]);
       break;
     case 3: // Camera 3 (IR): pin1=1, pin0=1
-      snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1 0=1");
+      snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1;gpioset gpiochip2 0=1");
       printf("Switching to %s\n", camera_names[3]);
       break;
     }
