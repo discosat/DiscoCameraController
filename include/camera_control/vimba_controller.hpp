@@ -13,6 +13,17 @@ class VimbaController: public CameraController {
         VmbCPP::VmbSystem& sys;
         std::vector<VmbCPP::CameraPtr> cameras;
 
+        // Camera configuration structure
+        struct CameraConfig {
+            std::string modelName;
+            VmbPixelFormatType preferredPixelFormat;
+            VmbInt64_t usbBandwidthLimit;
+            VmbInt64_t packetSize;
+            int streamBufferCount;
+            bool useFullResolution;
+            int acquisitionTimeout;
+        };
+
         std::vector<VmbCPP::CameraPtr> getCameras();
         VmbCPP::FramePtr aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain);
         bool turnOnCamera(VmbCPP::CameraPtr cam);
@@ -20,7 +31,9 @@ class VimbaController: public CameraController {
         int getBitsPerPixelFromFormat(VmbPixelFormatType format);
         int getChannelsFromFormat(VmbPixelFormatType format);
         bool readCameraTemperature(VmbCPP::CameraPtr cam, double& temperature);
-        bool saveImageAsPNG(u_char* buffer, u_int width, u_int height, int bitsPerPixel, VmbPixelFormatType pixelFormat, const std::string& filename);
+        bool saveImageAsTIFF(u_char* buffer, u_int width, u_int height, int bitsPerPixel, VmbPixelFormatType pixelFormat, const std::string& filename);
+        CameraConfig getCameraConfig(const std::string& cameraModel);
+        void applyCameraConfig(VmbCPP::CameraPtr cam, const CameraConfig& config);
 
     public:
         VimbaController();

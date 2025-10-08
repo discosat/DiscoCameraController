@@ -52,6 +52,8 @@ bool MessageQueue::sendMessage(ImageBatch batch){
         return false;
     }
 
+    std::cout << "Sending message with batch_size=" << batch.batch_size << " bytes" << std::endl;
+
     if (msgsnd(msgQueueId, &batch, sizeof(batch)-sizeof(batch.mtype), 0) == -1) {
         perror("msgsnd");
         return false;
@@ -65,10 +67,14 @@ bool MessageQueue::SendImage(ImageBatch batch, u_int16_t* error){
     int memspaceKey = createMemorySpaceKey();
     void* addr;
 
+    std::cout << "Creating shared memory segment for " << batch.batch_size << " bytes" << std::endl;
+
     if((memspace = createMemorySpace(batch.batch_size, memspaceKey)) < 0){
         *error = ERROR_CODE::MESSAGE_QUEUE_ERROR_MEMORY_SPACE_FAILURE;
         return false;
     }
+
+    std::cout << "Shared memory segment created: shmid=" << memspace << std::endl;
 
     addr = insertMemory(batch.data, batch.batch_size, memspace);
 

@@ -22,4 +22,7 @@ message Metadata {
     int32 obid = 7;
     string camera = 8;
     repeated MetadataItem items = 9;
+	
+    // Optional log message (only set if needed)
+    string log = 10; 
 }

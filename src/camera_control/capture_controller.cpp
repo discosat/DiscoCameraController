@@ -98,8 +98,12 @@ void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* 
         return;
     }
 
+    std::cout << "Image[0] size before packing: " << images.at(0).size << " bytes" << std::endl;
+
     size_t size = 0;
     unsigned char* total_buffer = this->createImageMessageData(images, capture_instructions, size);
+
+    std::cout << "Image batch size after packing: " << size << " bytes" << std::endl;
 
     ImageBatch batch;
     batch.pipeline_id = capture_instructions.PipelineId;

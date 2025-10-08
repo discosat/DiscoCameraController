@@ -2,6 +2,7 @@ build/*
 *.vmem
 *.csv
 *.bin
+*.tiff
 test_code/
 captured_images/
 

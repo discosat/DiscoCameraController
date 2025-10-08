@@ -44,8 +44,8 @@ PARAM_DEFINE_STATIC_VMEM(
     PARAM_TYPE_STRING,
     CAMERA_ID_MAX_LENGTH,
     1,
-    PM_CONF, 
-    NULL,
+    PM_CONF,
+    camera_id_param_callback,
     NULL,
     config,
     VMEM_CONF_CAMERA_ID_PARAM,
@@ -54,8 +54,9 @@ PARAM_DEFINE_STATIC_VMEM(
 
 // Camera type
 
-// Forward declaration of camera callback
+// Forward declaration of camera callbacks
 void camera_state_param_callback();
+void camera_id_param_callback();
 
 PARAM_DEFINE_STATIC_VMEM(
     PARAMID_CAMERA_TYPE_PARAM,
@@ -83,7 +84,7 @@ PARAM_DEFINE_STATIC_VMEM(
     NULL,
     config,
     VMEM_CONF_CAMERA_STATE_PARAM,
-    "Camera state: 0=off, 1=on (uses camera_type_param to determine which camera)"
+    "Camera state: 1=on, 0=off (uses camera_id_param to determine which camera)"
 );
 
 // Camera Temperature Parameter
