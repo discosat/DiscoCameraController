@@ -2,8 +2,10 @@
 #include <iostream>
 #include <memory>
 #include "errors.hpp"
+#include "logger.hpp"
 #include <cmath>
 #include "metadata.pb.hpp"
+#include <sstream>
 
 CaptureController::CaptureController(){
     this->mq = new MessageQueue();
@@ -69,13 +71,15 @@ void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* 
         return;
     }
 
-    std::cout << "New capture instructions:" << std::endl;
-    std::cout << "\tCamera: \"" << capture_instructions.CameraId << "\"" << std::endl;
-    std::cout << "\tExposure: " << capture_instructions.Exposure << std::endl;
-    std::cout << "\tISO: " << capture_instructions.ISO << std::endl;
-    std::cout  << "\tNumber of images: " << capture_instructions.NumberOfImages << std::endl;
-    std::cout  << "\tPipeline id: " << capture_instructions.PipelineId << std::endl;
-    std::cout  << "\tObservation id: " << capture_instructions.OBID << std::endl;
+    DiscoLogger::info("==== NEW CAPTURE REQUEST ====");
+    std::stringstream ss;
+    ss << "Camera: " << capture_instructions.CameraId
+       << " | Images: " << capture_instructions.NumberOfImages
+       << " | Exposure: " << capture_instructions.Exposure << "µs"
+       << " | ISO: " << capture_instructions.ISO
+       << " | OBID: " << capture_instructions.OBID
+       << " | Pipeline: " << capture_instructions.PipelineId;
+    DiscoLogger::info(ss.str());
 
     std::unique_ptr<CameraController> controller = CaptureController::CreateControllerInstance(capture_instructions.Type);
 
@@ -91,19 +95,25 @@ void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* 
     auto images = controller->Capture(capture_instructions, error);
 
     if(*error != ERROR_CODE::SUCCESS){
-        std::cerr << "Error code: " << *error << std::endl;
+        std::stringstream err_ss;
+        err_ss << "Capture failed with error code: " << *error;
+        DiscoLogger::error(err_ss.str());
         for (size_t i = 0; i < images.size(); i++){
             delete[] images.at(i).data;
         }
         return;
     }
 
-    std::cout << "Image[0] size before packing: " << images.at(0).size << " bytes" << std::endl;
+    std::stringstream pack_ss;
+    pack_ss << "Packing " << images.size() << " images (raw size: " << images.at(0).size << " bytes each)";
+    DiscoLogger::info(pack_ss.str());
 
     size_t size = 0;
     unsigned char* total_buffer = this->createImageMessageData(images, capture_instructions, size);
 
-    std::cout << "Image batch size after packing: " << size << " bytes" << std::endl;
+    std::stringstream batch_ss;
+    batch_ss << "Batch packed: " << size << " bytes total";
+    DiscoLogger::info(batch_ss.str());
 
     ImageBatch batch;
     batch.pipeline_id = capture_instructions.PipelineId;
@@ -112,9 +122,9 @@ void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* 
     batch.data = total_buffer;
 
     if(mq->SendImage(batch, error)){
-        std::cout << "Sending image was successful" << std::endl;
+        DiscoLogger::success("Image batch sent successfully!");
     } else {
-        std::cout << "Sending image was unsuccessful" << std::endl;
+        DiscoLogger::error("Failed to send image batch!");
     }
     delete[] total_buffer;
 }

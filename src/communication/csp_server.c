@@ -14,6 +14,8 @@
 
 #include "param_config.h"
 #include "vmem_config.h"
+#include "gpio_control.h"
+#include "logger.hpp"
 #include <csp/drivers/can_socketcan.h>
 #include <csp/drivers/usart.h>
 #include <csp/interfaces/csp_if_can.h>
@@ -60,54 +62,13 @@ void *router_task(void *param) {
   return NULL;
 }
 
-// Helper function to control GPIO pins based on camera model name
-// Note: All gpioset commands use shorthand syntax where multiple pin settings are space-separated
-// e.g., "gpioset gpiochip2 1=0 0=0" is equivalent to "gpioset gpiochip2 1=0;gpioset gpiochip2 0=0"
-void set_camera_gpio(const char* camera_model, int state) {
-  char gpio_cmd[256];
-
-  if (state == 0) {
-    // Turn off all cameras
-    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=0 0=0");
-    printf("Turning off all cameras\n");
-  } else if (strcmp(camera_model, CAMERA_1_MODEL) == 0) {
-    // Camera 1 (1800 U-507c): pin1=1, pin0=0
-    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1 0=0");
-    printf("Switching to %s\n", camera_model);
-  } else if (strcmp(camera_model, CAMERA_2_MODEL) == 0) {
-    // Camera 2 (1800 U-811c): pin1=0, pin0=1
-    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=0 0=1");
-    printf("Switching to %s\n", camera_model);
-  } else if (strcmp(camera_model, CAMERA_3_MODEL) == 0) {
-    // Camera 3 (Boson): pin1=1, pin0=1
-    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1 0=1");
-    printf("Switching to %s\n", camera_model);
-  } else {
-    printf("Unknown camera model: %s\n", camera_model);
-    return;
-  }
-
-  // Execute the GPIO command
-  int result = system(gpio_cmd);
-  if (result == 0) {
-    if (state == 0) {
-      printf("GPIO pins configured: All cameras OFF\n");
-    } else {
-      printf("GPIO pins configured: %s is now active\n", camera_model);
-    }
-  } else {
-    printf("Failed to configure GPIO pins. Command result: %d\n", result);
-    if (result == 32512) {
-      printf("Note: gpioset command not found. Install with: sudo apt-get install gpiod\n");
-    }
-  }
-}
-
 void camera_id_param_callback() {
   char new_camera_id[CAMERA_ID_MAX_LENGTH];
   param_get_string(&camera_id_param, new_camera_id, CAMERA_ID_MAX_LENGTH);
 
-  printf("Camera ID changed to: %s\n", new_camera_id);
+  char msg[256];
+  snprintf(msg, sizeof(msg), "Camera ID changed to: %s", new_camera_id);
+  log_info(msg);
 
   // Set state to 0, which will trigger camera_state_param_callback to turn off cameras
   param_set_uint8(&camera_state_param, 0);
@@ -118,15 +79,18 @@ void camera_state_param_callback() {
   char camera_id_str[CAMERA_ID_MAX_LENGTH];
   param_get_string(&camera_id_param, camera_id_str, CAMERA_ID_MAX_LENGTH);
 
-  printf("Camera state change: %s (camera_id: %s)\n",
-         camera_state ? "ON" : "OFF", camera_id_str);
+  char msg[256];
+  snprintf(msg, sizeof(msg), "Camera state change: %s (camera: %s)",
+           camera_state ? "ON" : "OFF", camera_id_str);
+  log_camera(msg);
 
   if (camera_state == 0) {
     set_camera_gpio(NULL, 0);
   } else if (camera_state == 1) {
     set_camera_gpio(camera_id_str, 1);
   } else {
-    printf("Invalid camera state: %u (should be 0 or 1)\n", camera_state);
+    snprintf(msg, sizeof(msg), "Invalid camera state: %u (should be 0 or 1)", camera_state);
+    log_warning(msg);
   }
 }
 
@@ -136,6 +100,17 @@ void capture_param_callback() {
 
   if (!param_value)
     return;
+
+  // Check camera state before allowing capture
+  uint8_t camera_state = param_get_uint8(&camera_state_param);
+  if (camera_state != 1) {
+    char msg[128];
+    snprintf(msg, sizeof(msg), "Cannot capture: camera is OFF (state=%d)", camera_state);
+    log_error(msg);
+    param_set_uint8(&capture_param, 0); // Reset capture param
+    return;
+  }
+
   capture = param_get_uint8(&capture_param);
 
   pthread_mutex_lock(&mutex);
@@ -143,7 +118,9 @@ void capture_param_callback() {
   // Get the camera_id parameter (camera model name like "1800 U-507c")
   param_get_string(&camera_id_param, camera_id, CAMERA_ID_MAX_LENGTH);
 
-  printf("Capture requested for camera: %s\n", camera_id);
+  char msg[256];
+  snprintf(msg, sizeof(msg), "Capture request received for: %s", camera_id);
+  log_camera(msg);
 
   camera_type = param_get_uint8(&camera_type_param);
   exposure = param_get_uint32(&exposure_param);

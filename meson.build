@@ -28,10 +28,12 @@ sources = files([
     'src/camera_control/ir_controller.cpp',
     'src/camera_control/capture_controller.cpp',
     'src/communication/csp_server.c',
+    'src/communication/gpio_control.c',
     'src/communication/param_config.c',
     'src/communication/serial.c',
     'src/communication/vmem_config.c',
     'src/communication/temperature_bridge.cpp',
+    'src/utils/logger.cpp',
 ])
 
 cpp = meson.get_compiler('cpp')

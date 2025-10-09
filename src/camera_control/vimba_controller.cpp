@@ -6,12 +6,18 @@
 #include <VmbCPP/VmbCPP.h>
 #include "errors.hpp"
 #include "common.hpp"
+#include "logger.hpp"
 #include <memory>
 #include <cstring>
 #include <fstream>
 #include "param_config.h"
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
+#include <sstream>
+
+extern "C" {
+#include "gpio_control.h"
+}
 
 using namespace VmbCPP;
 
@@ -115,9 +121,7 @@ bool VimbaController::turnOffCamera(VmbCPP::CameraPtr cam){
 }
 
 FramePtr VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain){
-    if(!turnOnCamera(cam)){
-        throw std::runtime_error("Could not turn on camera");
-    }
+    // Camera power is now controlled via GPIO hardware, not software suspend
 
     // Set acquisition mode to single frame
     FeaturePtr pAcquisitionMode;
@@ -125,7 +129,9 @@ FramePtr VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, fl
     if (err == VmbErrorSuccess) {
         err = pAcquisitionMode->SetValue("SingleFrame");
         if (err != VmbErrorSuccess) {
-            std::cerr << "Warning: Could not set AcquisitionMode to SingleFrame, err=" << err << std::endl;
+            std::stringstream ss;
+            ss << "Could not set AcquisitionMode to SingleFrame (error=" << err << ")";
+            DiscoLogger::warning(ss.str());
         }
     }
 
@@ -147,14 +153,18 @@ FramePtr VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, fl
         if (pWidth->GetRange(minWidth, maxWidth) == VmbErrorSuccess) {
             VmbInt64_t fullWidth = (maxWidth / 2) * 2;  // Ensure even width
             pWidth->SetValue(fullWidth);
-            std::cout << "Set width to " << fullWidth << " (full sensor width)" << std::endl;
+            std::stringstream ss;
+            ss << "Width set to " << fullWidth << " pixels (full sensor)";
+            DiscoLogger::camera(ss.str());
         }
     }
     if (cam->GetFeatureByName("Height", pHeight) == VmbErrorSuccess) {
         if (pHeight->GetRange(minHeight, maxHeight) == VmbErrorSuccess) {
             VmbInt64_t fullHeight = (maxHeight / 2) * 2;  // Ensure even height
             pHeight->SetValue(fullHeight);
-            std::cout << "Set height to " << fullHeight << " (full sensor height)" << std::endl;
+            std::stringstream ss;
+            ss << "Height set to " << fullHeight << " pixels (full sensor)";
+            DiscoLogger::camera(ss.str());
         }
     }
 
@@ -165,7 +175,7 @@ FramePtr VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, fl
         VmbInt64_t limitValue = 35000000; // 35 MB/s
         err = pDeviceLinkThroughputLimit->SetValue(limitValue);
         if (err == VmbErrorSuccess) {
-            std::cout << "Set USB bandwidth limit to " << limitValue << " bytes/sec" << std::endl;
+            DiscoLogger::camera("USB bandwidth limit set to 35 MB/s");
         }
     }
 
@@ -181,7 +191,9 @@ FramePtr VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, fl
             VmbInt64_t packetSize = std::min((VmbInt64_t)16384, maxPacket);
             packetSize = std::max(packetSize, minPacket);
             pPacketSize->SetValue(packetSize);
-            std::cout << "Set packet size to " << packetSize << " bytes" << std::endl;
+            std::stringstream ss;
+            ss << "Packet size set to " << packetSize << " bytes";
+            DiscoLogger::camera(ss.str());
         }
     }
 
@@ -190,7 +202,7 @@ FramePtr VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, fl
     err = cam->GetFeatureByName("StreamBufferCount", pStreamBufferCount);
     if (err == VmbErrorSuccess) {
         pStreamBufferCount->SetValue(25);
-        std::cout << "Set stream buffer count to 25" << std::endl;
+        DiscoLogger::camera("Stream buffer count set to 25");
     }
 
     // Set pixel format
@@ -201,7 +213,7 @@ FramePtr VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, fl
     {
         err = pFormatFeature->SetValue(VmbPixelFormatBayerRG12);
         if (VmbErrorSuccess != err) {
-            std::cerr << "ERROR: Failed to set pixel format to BayerRG12!" << std::endl;
+            DiscoLogger::error("Failed to set pixel format to BayerRG12!");
         }
 
         // Set exposure and gain
@@ -240,9 +252,7 @@ FramePtr VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, fl
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 
-    if(!turnOffCamera(cam)){
-        std::cerr << "Could not turn off camera" << std::endl;
-    }
+    // Camera power-off is now handled via GPIO hardware in the main capture loop
 
     return frame;
 }
@@ -253,7 +263,7 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
     std::vector<Image> images;
     
     if(cameras.size() > 0){
-        // Find the requested camera without printing
+        // Find the requested camera
         for(size_t i = 0; i < cameras.size(); i++){
             std::string camName;
             cameras.at(i)->GetModel(camName);
@@ -264,36 +274,65 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
             }
         }
 
-        // If no matching camera found but cameras exist, use the first one
-        if(cam == NULL && cameras.size() > 0){
-            cam = cameras.at(0);
-            std::string camName;
-            cam->GetModel(camName);
-            std::cout << "Warning: Camera '" << capture_instructions.CameraId << "' not found. Using first available camera: " << camName << std::endl;
+        // Fail gracefully if requested camera not found
+        if(!cam){
+            *error = ERROR_CODE::CAPTURE_ERROR_CAMERA_NOT_FOUND;
+            std::stringstream ss;
+            ss << "Camera '" << capture_instructions.CameraId << "' not found!";
+            DiscoLogger::error(ss.str());
+
+            DiscoLogger::info("Available cameras:");
+            for(size_t i = 0; i < cameras.size(); i++){
+                std::string camName;
+                cameras.at(i)->GetModel(camName);
+                std::stringstream cam_ss;
+                cam_ss << "  - " << camName;
+                DiscoLogger::info(cam_ss.str());
+            }
+            return images;
         }
     } else {
         *error = ERROR_CODE::CAPTURE_ERROR_NO_CAMERAS;
-        std::cout << "No cameras found!" << std::endl;
+        DiscoLogger::error("No cameras found!");
         return images;
     }
 
     if(cam != NULL){
         VmbErrorType openErr = cam->Open(VmbAccessModeExclusive);
         if (openErr != VmbErrorSuccess) {
-            std::cerr << "Failed to open camera. Error code: " << openErr << std::endl;
+            std::stringstream ss;
+            ss << "Failed to open camera (error code: " << openErr << ")";
+            DiscoLogger::error(ss.str());
             *error = ERROR_CODE::CAPTURE_ERROR;
             return images;
         }
         
         for(size_t i = 0; i < capture_instructions.NumberOfImages; i++){
+            // Check camera state before each capture
+            uint8_t camera_state = param_get_uint8(&camera_state_param);
+            if (camera_state != 1) {
+                DiscoLogger::warning("Camera turned off during batch capture - aborting remaining captures");
+                // Clean up any partial images
+                for (size_t j = 0; j < images.size(); j++) {
+                    delete[] images.at(j).data;
+                }
+                images.clear();
+                *error = ERROR_CODE::CAPTURE_ERROR;
+
+                // Ensure camera is powered off via GPIO
+                set_camera_gpio(NULL, 0);
+                cam->Close();
+                return images;
+            }
+
             VmbCPP::FramePtr frame;
             size_t timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
             try{
-		    
+
                 frame = this->aqcuireFrame(cam, capture_instructions.Exposure, capture_instructions.ISO);
             } catch(const std::exception& e){
-                std::cout << "Error!" << std::endl;
+                DiscoLogger::error("Failed to acquire frame!");
                 *error = ERROR_CODE::CAPTURE_ERROR;
                 return images;
             }
@@ -319,21 +358,84 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
             img.channels = 1;  // Bayer is always 1 channel
             img.timestamp = timestamp;
 
-            std::cout << "Captured image with pixel format: 0x" << std::hex << pixelFormat << std::dec
-                      << ", bits per pixel: 12"
-                      << ", channels: 1"
-                      << ", width: " << width
-                      << ", height: " << height
-                      << ", buffer size: " << bufferSize << " bytes" << std::endl;
+            std::stringstream ss;
+            ss << "Captured image " << (i+1) << "/" << capture_instructions.NumberOfImages
+               << " [" << width << "x" << height << ", " << bufferSize << " bytes]";
+            DiscoLogger::success(ss.str());
             
             // Copy the actual image data from buffer to img.data
             std::memcpy(img.data, buffer, bufferSize);
 
             images.push_back(img);
 
-            // delay if needed
-            if(i < capture_instructions.NumberOfImages - 1 && capture_instructions.Interval > 0){
-                std::this_thread::sleep_for(std::chrono::milliseconds(capture_instructions.Interval));
+            // Power cycle camera between captures (if more images remain)
+            if(i < capture_instructions.NumberOfImages - 1){
+                DiscoLogger::camera("Power cycling camera between captures...");
+
+                // Close camera before powering off
+                cam->Close();
+
+                // Power off camera via GPIO
+                set_camera_gpio(NULL, 0);
+
+                // Apply interval delay (if specified)
+                if(capture_instructions.Interval > 0){
+                    std::this_thread::sleep_for(std::chrono::milliseconds(capture_instructions.Interval));
+                }
+
+                // Power on camera via GPIO
+                set_camera_gpio(capture_instructions.CameraId.c_str(), 1);
+
+                // Wait for camera initialization (typical 2 seconds)
+                DiscoLogger::camera("Waiting 2s for camera initialization...");
+                std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+
+                // Re-enumerate cameras after power cycle
+                cameras = this->getCameras();
+                cam.reset();
+
+                // Find the camera again
+                for(size_t j = 0; j < cameras.size(); j++){
+                    std::string camName;
+                    cameras.at(j)->GetModel(camName);
+                    if(camName == capture_instructions.CameraId){
+                        cam = cameras.at(j);
+                        break;
+                    }
+                }
+
+                if(!cam){
+                    DiscoLogger::error("Failed to re-open camera after power cycle!");
+                    // Clean up any partial images
+                    for (size_t j = 0; j < images.size(); j++) {
+                        delete[] images.at(j).data;
+                    }
+                    images.clear();
+                    *error = ERROR_CODE::CAPTURE_ERROR;
+                    set_camera_gpio(NULL, 0); // Ensure camera is off on error
+                    return images;
+                }
+
+                // Re-open camera for next capture
+                VmbErrorType openErr = cam->Open(VmbAccessModeExclusive);
+                if (openErr != VmbErrorSuccess) {
+                    std::stringstream ss;
+                    ss << "Failed to re-open camera after power cycle (error: " << openErr << ")";
+                    DiscoLogger::error(ss.str());
+                    // Clean up any partial images
+                    for (size_t j = 0; j < images.size(); j++) {
+                        delete[] images.at(j).data;
+                    }
+                    images.clear();
+                    *error = ERROR_CODE::CAPTURE_ERROR;
+                    set_camera_gpio(NULL, 0); // Ensure camera is off on error
+                    return images;
+                }
+
+                std::stringstream success_ss;
+                success_ss << "Camera re-initialized, ready for capture " << (i+2)
+                          << "/" << capture_instructions.NumberOfImages;
+                DiscoLogger::success(success_ss.str());
             }
         }
 
