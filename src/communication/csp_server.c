@@ -30,7 +30,6 @@
 
 // shared resources and mutexes
 char camera_id[CAMERA_ID_MAX_LENGTH];
-char current_active_camera_id[CAMERA_ID_MAX_LENGTH] = "";
 uint8_t capture;
 uint8_t camera_type;
 uint32_t exposure;
@@ -62,24 +61,26 @@ void *router_task(void *param) {
 }
 
 // Helper function to control GPIO pins based on camera model name
+// Note: All gpioset commands use shorthand syntax where multiple pin settings are space-separated
+// e.g., "gpioset gpiochip2 1=0 0=0" is equivalent to "gpioset gpiochip2 1=0;gpioset gpiochip2 0=0"
 void set_camera_gpio(const char* camera_model, int state) {
   char gpio_cmd[256];
 
   if (state == 0) {
     // Turn off all cameras
-    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=0;gpioset gpiochip2 0=0");
+    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=0 0=0");
     printf("Turning off all cameras\n");
   } else if (strcmp(camera_model, CAMERA_1_MODEL) == 0) {
     // Camera 1 (1800 U-507c): pin1=1, pin0=0
-    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1;gpioset gpiochip2 0=0");
+    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1 0=0");
     printf("Switching to %s\n", camera_model);
   } else if (strcmp(camera_model, CAMERA_2_MODEL) == 0) {
     // Camera 2 (1800 U-811c): pin1=0, pin0=1
-    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=0;gpioset gpiochip2 0=1");
+    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=0 0=1");
     printf("Switching to %s\n", camera_model);
   } else if (strcmp(camera_model, CAMERA_3_MODEL) == 0) {
     // Camera 3 (Boson): pin1=1, pin0=1
-    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1;gpioset gpiochip2 0=1");
+    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1 0=1");
     printf("Switching to %s\n", camera_model);
   } else {
     printf("Unknown camera model: %s\n", camera_model);
@@ -106,30 +107,10 @@ void camera_id_param_callback() {
   char new_camera_id[CAMERA_ID_MAX_LENGTH];
   param_get_string(&camera_id_param, new_camera_id, CAMERA_ID_MAX_LENGTH);
 
-  uint8_t camera_state = param_get_uint8(&camera_state_param);
-
   printf("Camera ID changed to: %s\n", new_camera_id);
 
-  // If there's a currently active camera and it's different from the new one
-  if (strlen(current_active_camera_id) > 0 && strcmp(current_active_camera_id, new_camera_id) != 0) {
-    printf("Switching from camera %s to %s\n", current_active_camera_id, new_camera_id);
-
-    // Turn off all cameras when switching
-    set_camera_gpio(NULL, 0);
-
-    // Set camera_state_param to 0 to indicate camera is off
-    param_set_uint8(&camera_state_param, 0);
-  }
-
-  // Update the current active camera ID
-  strcpy(current_active_camera_id, new_camera_id);
-
-  // If camera_state is 1, turn on the new camera
-  if (camera_state == 1) {
-    set_camera_gpio(new_camera_id, 1);
-    // Update camera_state_param to 1 to reflect that the new camera is on
-    param_set_uint8(&camera_state_param, 1);
-  }
+  // Set state to 0, which will trigger camera_state_param_callback to turn off cameras
+  param_set_uint8(&camera_state_param, 0);
 }
 
 void camera_state_param_callback() {
@@ -141,15 +122,9 @@ void camera_state_param_callback() {
          camera_state ? "ON" : "OFF", camera_id_str);
 
   if (camera_state == 0) {
-    // Turn off all cameras
     set_camera_gpio(NULL, 0);
-    // Clear the current active camera
-    current_active_camera_id[0] = '\0';
   } else if (camera_state == 1) {
-    // Turn on the camera specified by camera_id_param
     set_camera_gpio(camera_id_str, 1);
-    // Update the current active camera
-    strcpy(current_active_camera_id, camera_id_str);
   } else {
     printf("Invalid camera state: %u (should be 0 or 1)\n", camera_state);
   }
