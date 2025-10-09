@@ -21,7 +21,7 @@ extern param_t error_log;
 // Production camera model definitions
 #define CAMERA_1_MODEL "1800 U-507c"  // cam1: Optical camera 1 (5MP)
 #define CAMERA_2_MODEL "1800 U-811c"  // cam2: Optical camera 2 (12MP)
-#define CAMERA_3_MODEL "IR_Camera"     // cam3: IR camera (model TBD)
+#define CAMERA_3_MODEL "Boson"         // cam3: IR camera
 #define CAMERA_4_MODEL "1800 U-500c"  // cam4: Test camera (5MP)
 
 // GPIO mapping for camera switching

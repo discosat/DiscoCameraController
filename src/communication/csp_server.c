@@ -61,89 +61,28 @@ void *router_task(void *param) {
   return NULL;
 }
 
-// Camera configuration lookup table
-typedef struct {
-    const char* friendly_name;  // User-facing name (cam1, cam2, etc.)
-    const char* model_name;     // Actual camera model
-    int gpio_num;               // GPIO configuration number
-    const char* description;    // Human-readable description
-} CameraConfig;
-
-// Camera configuration table - easy to modify in one place
-static const CameraConfig camera_configs[] = {
-    {"cam1", CAMERA_1_MODEL, CAMERA_1_GPIO_NUM, "Optical camera 1 (5MP)"},
-    {"cam2", CAMERA_2_MODEL, CAMERA_2_GPIO_NUM, "Optical camera 2 (12MP)"},
-    {"cam3", CAMERA_3_MODEL, CAMERA_3_GPIO_NUM, "IR camera"},
-    {"cam4", CAMERA_4_MODEL, CAMERA_4_GPIO_NUM, "Test camera (5MP)"},
-    {NULL, NULL, 0, NULL}  // Sentinel
-};
-
-// Get camera model name from friendly name
-const char* get_camera_model_from_friendly_name(const char* friendly_name) {
-    for (int i = 0; camera_configs[i].friendly_name != NULL; i++) {
-        if (strcmp(camera_configs[i].friendly_name, friendly_name) == 0) {
-            return camera_configs[i].model_name;
-        }
-    }
-    return friendly_name;  // If not a friendly name, assume it's already a model name
-}
-
-// Helper function to get camera number from camera_id
-int get_camera_number_from_id(const char* camera_id) {
-    // Check if it's a friendly name first
-    for (int i = 0; camera_configs[i].friendly_name != NULL; i++) {
-        if (strcmp(camera_configs[i].friendly_name, camera_id) == 0) {
-            printf("Camera lookup: %s -> %s (GPIO %d)\n",
-                   camera_id, camera_configs[i].model_name, camera_configs[i].gpio_num);
-            return camera_configs[i].gpio_num;
-        }
-    }
-
-    // If not a friendly name, check if it's a model name
-    for (int i = 0; camera_configs[i].model_name != NULL; i++) {
-        if (strcmp(camera_configs[i].model_name, camera_id) == 0) {
-            printf("Camera lookup: %s (GPIO %d)\n",
-                   camera_id, camera_configs[i].gpio_num);
-            return camera_configs[i].gpio_num;
-        }
-    }
-
-    printf("Warning: Unknown camera ID '%s', defaulting to GPIO 1\n", camera_id);
-    return 1;  // Default to GPIO config 1
-}
-
-// Helper function to control GPIO pins based on camera number
-void set_camera_gpio(int camera_num, int state) {
+// Helper function to control GPIO pins based on camera model name
+void set_camera_gpio(const char* camera_model, int state) {
   char gpio_cmd[256];
-  const char *camera_names[] = {
-    "OFF",
-    "cam1 (1800 U-507c)",
-    "cam2 (1800 U-811c)",
-    "cam3 (Boson)"
-  };
 
   if (state == 0) {
     // Turn off all cameras
     snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=0;gpioset gpiochip2 0=0");
     printf("Turning off all cameras\n");
-  } else if (camera_num >= 1 && camera_num <= 3) {
-    // Set GPIO pins based on camera number (matching the truth table)
-    switch (camera_num) {
-    case 1: // Camera 1 (U-507c): pin1=1, pin0=0
-      snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1;gpioset gpiochip2 0=0");
-      printf("Switching to %s\n", camera_names[1]);
-      break;
-    case 2: // Camera 2 (U-811c): pin1=0, pin0=1
-      snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=0;gpioset gpiochip2 0=1");
-      printf("Switching to %s\n", camera_names[2]);
-      break;
-    case 3: // Camera 3 (Boson): pin1=1, pin0=1
-      snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1;gpioset gpiochip2 0=1");
-      printf("Switching to %s\n", camera_names[3]);
-      break;
-    }
+  } else if (strcmp(camera_model, CAMERA_1_MODEL) == 0) {
+    // Camera 1 (1800 U-507c): pin1=1, pin0=0
+    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1;gpioset gpiochip2 0=0");
+    printf("Switching to %s\n", camera_model);
+  } else if (strcmp(camera_model, CAMERA_2_MODEL) == 0) {
+    // Camera 2 (1800 U-811c): pin1=0, pin0=1
+    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=0;gpioset gpiochip2 0=1");
+    printf("Switching to %s\n", camera_model);
+  } else if (strcmp(camera_model, CAMERA_3_MODEL) == 0) {
+    // Camera 3 (Boson): pin1=1, pin0=1
+    snprintf(gpio_cmd, sizeof(gpio_cmd), "gpioset gpiochip2 1=1;gpioset gpiochip2 0=1");
+    printf("Switching to %s\n", camera_model);
   } else {
-    printf("Invalid camera number: %d\n", camera_num);
+    printf("Unknown camera model: %s\n", camera_model);
     return;
   }
 
@@ -153,7 +92,7 @@ void set_camera_gpio(int camera_num, int state) {
     if (state == 0) {
       printf("GPIO pins configured: All cameras OFF\n");
     } else {
-      printf("GPIO pins configured: %s is now active\n", camera_names[camera_num]);
+      printf("GPIO pins configured: %s is now active\n", camera_model);
     }
   } else {
     printf("Failed to configure GPIO pins. Command result: %d\n", result);
@@ -175,11 +114,8 @@ void camera_id_param_callback() {
   if (strlen(current_active_camera_id) > 0 && strcmp(current_active_camera_id, new_camera_id) != 0) {
     printf("Switching from camera %s to %s\n", current_active_camera_id, new_camera_id);
 
-    // Turn off the current active camera
-    int old_camera_num = get_camera_number_from_id(current_active_camera_id);
-    if (old_camera_num > 0) {
-      set_camera_gpio(old_camera_num, 0);
-    }
+    // Turn off all cameras when switching
+    set_camera_gpio(NULL, 0);
 
     // Set camera_state_param to 0 to indicate camera is off
     param_set_uint8(&camera_state_param, 0);
@@ -190,14 +126,9 @@ void camera_id_param_callback() {
 
   // If camera_state is 1, turn on the new camera
   if (camera_state == 1) {
-    int new_camera_num = get_camera_number_from_id(new_camera_id);
-    if (new_camera_num > 0) {
-      set_camera_gpio(new_camera_num, 1);
-      // Update camera_state_param to 1 to reflect that the new camera is on
-      param_set_uint8(&camera_state_param, 1);
-    } else {
-      printf("Warning: Unknown camera ID format: %s\n", new_camera_id);
-    }
+    set_camera_gpio(new_camera_id, 1);
+    // Update camera_state_param to 1 to reflect that the new camera is on
+    param_set_uint8(&camera_state_param, 1);
   }
 }
 
@@ -210,20 +141,15 @@ void camera_state_param_callback() {
          camera_state ? "ON" : "OFF", camera_id_str);
 
   if (camera_state == 0) {
-    // Turn off current camera
-    set_camera_gpio(0, 0); // Turn off all cameras
+    // Turn off all cameras
+    set_camera_gpio(NULL, 0);
     // Clear the current active camera
     current_active_camera_id[0] = '\0';
   } else if (camera_state == 1) {
     // Turn on the camera specified by camera_id_param
-    int camera_num = get_camera_number_from_id(camera_id_str);
-    if (camera_num > 0) {
-      set_camera_gpio(camera_num, 1);
-      // Update the current active camera
-      strcpy(current_active_camera_id, camera_id_str);
-    } else {
-      printf("Warning: Unknown camera ID format: %s\n", camera_id_str);
-    }
+    set_camera_gpio(camera_id_str, 1);
+    // Update the current active camera
+    strcpy(current_active_camera_id, camera_id_str);
   } else {
     printf("Invalid camera state: %u (should be 0 or 1)\n", camera_state);
   }
@@ -239,15 +165,10 @@ void capture_param_callback() {
 
   pthread_mutex_lock(&mutex);
 
-  // Get the camera_id parameter (might be friendly name like "cam1")
-  char friendly_camera_id[CAMERA_ID_MAX_LENGTH];
-  param_get_string(&camera_id_param, friendly_camera_id, CAMERA_ID_MAX_LENGTH);
+  // Get the camera_id parameter (camera model name like "1800 U-507c")
+  param_get_string(&camera_id_param, camera_id, CAMERA_ID_MAX_LENGTH);
 
-  // Translate friendly name to actual camera model for VimbaController
-  const char* actual_model = get_camera_model_from_friendly_name(friendly_camera_id);
-  strcpy(camera_id, actual_model);
-
-  printf("Capture requested: %s -> %s\n", friendly_camera_id, camera_id);
+  printf("Capture requested for camera: %s\n", camera_id);
 
   camera_type = param_get_uint8(&camera_type_param);
   exposure = param_get_uint32(&exposure_param);
