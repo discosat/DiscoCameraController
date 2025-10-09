@@ -68,69 +68,6 @@ bool VimbaController::readCameraTemperature(VmbCPP::CameraPtr cam, double& tempe
     return false;
 }
 
-bool VimbaController::saveImageAsTIFF(u_char* buffer, u_int width, u_int height, int bitsPerPixel, VmbPixelFormatType pixelFormat, const std::string& filename) {
-    try {
-        // Create OpenCV Mat for raw image (12-bit data in 16-bit container)
-        cv::Mat rawImage(height, width, CV_16UC1, (uint16_t*)buffer);
-
-        if (rawImage.empty() || rawImage.data == NULL) {
-            std::cerr << "ERROR: Failed to create raw image Mat" << std::endl;
-            return false;
-        }
-
-        // Perform demosaicing with BayerRG pattern
-        cv::Mat demosaicedImage;
-        cv::cvtColor(rawImage, demosaicedImage, cv::COLOR_BayerRG2BGR);
-
-        if (demosaicedImage.empty() || demosaicedImage.data == NULL) {
-            std::cerr << "ERROR: Demosaicing failed" << std::endl;
-            return false;
-        }
-
-        // Apply 180 degree rotation to match camera orientation
-        cv::Point2f center(width / 2.0f, height / 2.0f);
-        double angle = 180;
-        double scale = 1.0;
-
-        cv::Mat rotation_matrix = cv::getRotationMatrix2D(center, angle, scale);
-
-        if (rotation_matrix.empty()) {
-            std::cerr << "ERROR: Failed to create rotation matrix" << std::endl;
-            return false;
-        }
-
-        cv::Mat rotated_image;
-        cv::warpAffine(demosaicedImage, rotated_image, rotation_matrix, cv::Size(width, height));
-
-        if (rotated_image.empty() || rotated_image.data == NULL) {
-            std::cerr << "ERROR: Rotation failed" << std::endl;
-            return false;
-        }
-
-        // Normalize to 0-255 range
-        cv::Mat normalized_Image;
-        cv::normalize(rotated_image, normalized_Image, 0, 255, cv::NORM_MINMAX);
-
-        if (normalized_Image.empty() || normalized_Image.data == NULL) {
-            std::cerr << "ERROR: Normalization failed" << std::endl;
-            return false;
-        }
-
-        // Save as PNG
-        bool success = cv::imwrite(filename, normalized_Image);
-        if (success) {
-            std::cout << "Image saved as " << filename << " (" << normalized_Image.cols << "x" << normalized_Image.rows << ")" << std::endl;
-        } else {
-            std::cerr << "Failed to save image as " << filename << std::endl;
-        }
-        return success;
-
-    } catch (const cv::Exception& e) {
-        std::cerr << "OpenCV error saving image: " << e.what() << std::endl;
-        return false;
-    }
-}
-
 std::vector<CameraPtr> VimbaController::getCameras(){
     CameraPtrVector cams;
     VmbErrorType err = sys.GetCameras(cams);
@@ -391,10 +328,6 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
             
             // Copy the actual image data from buffer to img.data
             std::memcpy(img.data, buffer, bufferSize);
-
-            // Save image as TIFF
-            std::string tiffFilename = "captured_image.tiff";
-            saveImageAsTIFF(buffer, width, height, 12, pixelFormat, tiffFilename);
 
             images.push_back(img);
 

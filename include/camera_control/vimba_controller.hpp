@@ -16,7 +16,6 @@ class VimbaController: public CameraController {
         bool turnOnCamera(VmbCPP::CameraPtr cam);
         bool turnOffCamera(VmbCPP::CameraPtr cam);
         bool readCameraTemperature(VmbCPP::CameraPtr cam, double& temperature);
-        bool saveImageAsTIFF(u_char* buffer, u_int width, u_int height, int bitsPerPixel, VmbPixelFormatType pixelFormat, const std::string& filename);
 
     public:
         VimbaController();
