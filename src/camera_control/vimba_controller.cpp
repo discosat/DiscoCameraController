@@ -28,219 +28,6 @@ VimbaController::~VimbaController(){
     sys.Shutdown();
 }
 
-VimbaController::CameraConfig VimbaController::getCameraConfig(const std::string& cameraModel) {
-    CameraConfig config;
-    config.modelName = cameraModel;
-
-    // Default configuration (conservative, works for most cameras)
-    config.preferredPixelFormat = VmbPixelFormatBayerGR12;
-    config.usbBandwidthLimit = 25000000;  // 25 MB/s
-    config.packetSize = 4096;
-    config.streamBufferCount = 10;
-    config.useFullResolution = true;
-    config.acquisitionTimeout = 30000;  // 30 seconds
-
-    // Camera-specific optimizations
-    if (cameraModel.find("1800 U-500") != std::string::npos) {
-        // 1800 U-500c: 5MP camera, needs conservative USB settings
-        std::cout << "Configuring for Allied Vision 1800 U-500 (5MP)" << std::endl;
-        config.preferredPixelFormat = VmbPixelFormatBayerGR12;  // Use 12-bit
-        config.usbBandwidthLimit = 30000000;  // 30 MB/s
-        config.packetSize = 8192;
-        config.streamBufferCount = 20;
-        config.acquisitionTimeout = 60000;  // 60 seconds for large images
-    }
-    else if (cameraModel.find("1800 U-507") != std::string::npos) {
-        // 1800 U-507c: 5MP camera, similar to U-500 but slightly different sensor
-        std::cout << "Configuring for Allied Vision 1800 U-507 (5MP)" << std::endl;
-        config.preferredPixelFormat = VmbPixelFormatBayerGR12;  // Use 12-bit
-        config.usbBandwidthLimit = 32000000;  // 32 MB/s
-        config.packetSize = 8192;
-        config.streamBufferCount = 20;
-        config.acquisitionTimeout = 60000;
-    }
-    else if (cameraModel.find("1800 U-811") != std::string::npos) {
-        // 1800 U-811c: 12MP camera, highest resolution, needs most conservative settings
-        std::cout << "Configuring for Allied Vision 1800 U-811 (12MP)" << std::endl;
-        config.preferredPixelFormat = VmbPixelFormatBayerGR12;  // Use 12-bit for 12MP
-        config.usbBandwidthLimit = 35000000;  // 35 MB/s (near USB2 practical limit)
-        config.packetSize = 16384;  // Larger packets for efficiency
-        config.streamBufferCount = 25;  // More buffers for large images
-        config.acquisitionTimeout = 90000;  // 90 seconds for very large images
-    }
-    else if (cameraModel.find("IR") != std::string::npos) {
-        // IR camera configuration - assuming it's also USB2
-        std::cout << "Configuring for IR camera" << std::endl;
-        config.preferredPixelFormat = VmbPixelFormatMono12;  // IR cameras typically use mono, 12-bit
-        config.usbBandwidthLimit = 30000000;  // 30 MB/s
-        config.packetSize = 8192;
-        config.streamBufferCount = 15;
-        config.acquisitionTimeout = 45000;
-    }
-    else if (cameraModel.find("1800 U-") != std::string::npos) {
-        // Generic 1800 U-series configuration
-        std::cout << "Configuring for generic Allied Vision 1800 U-series" << std::endl;
-        config.preferredPixelFormat = VmbPixelFormatBayerGR12;
-        config.usbBandwidthLimit = 28000000;
-        config.packetSize = 8192;
-        config.streamBufferCount = 15;
-        config.acquisitionTimeout = 45000;
-    }
-    else {
-        std::cout << "Using default configuration for unknown camera model: " << cameraModel << std::endl;
-    }
-
-    return config;
-}
-
-void VimbaController::applyCameraConfig(VmbCPP::CameraPtr cam, const CameraConfig& config) {
-    VmbErrorType err;
-
-    // Apply USB bandwidth limit
-    FeaturePtr pDeviceLinkThroughputLimit;
-    err = cam->GetFeatureByName("DeviceLinkThroughputLimit", pDeviceLinkThroughputLimit);
-    if (err == VmbErrorSuccess) {
-        err = pDeviceLinkThroughputLimit->SetValue(config.usbBandwidthLimit);
-        if (err == VmbErrorSuccess) {
-            std::cout << "  - USB bandwidth limit: " << config.usbBandwidthLimit << " bytes/sec" << std::endl;
-        }
-    }
-
-    // Apply packet size
-    FeaturePtr pPacketSize;
-    err = cam->GetFeatureByName("GVSPPacketSize", pPacketSize);
-    if (err != VmbErrorSuccess) {
-        err = cam->GetFeatureByName("PacketSize", pPacketSize);
-    }
-    if (err == VmbErrorSuccess) {
-        VmbInt64_t minPacket, maxPacket;
-        if (pPacketSize->GetRange(minPacket, maxPacket) == VmbErrorSuccess) {
-            VmbInt64_t actualPacketSize = std::min(config.packetSize, maxPacket);
-            actualPacketSize = std::max(actualPacketSize, minPacket);
-            pPacketSize->SetValue(actualPacketSize);
-            std::cout << "  - Packet size: " << actualPacketSize << " bytes" << std::endl;
-        }
-    }
-
-    // Apply stream buffer count
-    FeaturePtr pStreamBufferCount;
-    err = cam->GetFeatureByName("StreamBufferCount", pStreamBufferCount);
-    if (err == VmbErrorSuccess) {
-        pStreamBufferCount->SetValue(config.streamBufferCount);
-        std::cout << "  - Stream buffer count: " << config.streamBufferCount << std::endl;
-    }
-
-    // Apply pixel format
-    FeaturePtr pFormatFeature;
-    err = cam->GetFeatureByName("PixelFormat", pFormatFeature);
-    if (err == VmbErrorSuccess) {
-        err = pFormatFeature->SetValue(config.preferredPixelFormat);
-        if (err != VmbErrorSuccess) {
-            // Fallback to other 12-bit formats if preferred isn't available
-            std::cout << "  - Preferred pixel format not available, trying 12-bit alternatives..." << std::endl;
-
-            // Try only 12-bit Bayer formats (no 16-bit or 8-bit fallback)
-            VmbPixelFormatType formats[] = {
-                VmbPixelFormatBayerGR12, VmbPixelFormatBayerRG12,
-                VmbPixelFormatBayerGB12, VmbPixelFormatBayerBG12,
-                VmbPixelFormatMono12
-            };
-
-            bool formatFound = false;
-            for (auto format : formats) {
-                err = pFormatFeature->SetValue(format);
-                if (err == VmbErrorSuccess) {
-                    std::cout << "  - Using pixel format: 0x" << std::hex << format << std::dec << std::endl;
-                    formatFound = true;
-                    break;
-                }
-            }
-
-            if (!formatFound) {
-                std::cerr << "  - ERROR: No supported 12-bit pixel format found!" << std::endl;
-            }
-        } else {
-            std::cout << "  - Pixel format: 0x" << std::hex << config.preferredPixelFormat << std::dec << std::endl;
-        }
-    }
-}
-
-int VimbaController::getBitsPerPixelFromFormat(VmbPixelFormatType format) {
-    switch(format) {
-        case VmbPixelFormatBayerGR8:
-        case VmbPixelFormatBayerRG8:
-        case VmbPixelFormatBayerGB8:
-        case VmbPixelFormatBayerBG8:
-        case VmbPixelFormatMono8:
-        case VmbPixelFormatRgb8:
-            return 8;
-            
-        case VmbPixelFormatBayerGR10:
-        case VmbPixelFormatBayerRG10:
-        case VmbPixelFormatBayerGB10:
-        case VmbPixelFormatBayerBG10:
-        case VmbPixelFormatMono10:
-        case VmbPixelFormatRgb10:
-            return 10;
-            
-        case VmbPixelFormatBayerGR12:
-        case VmbPixelFormatBayerRG12:
-        case VmbPixelFormatBayerGB12:
-        case VmbPixelFormatBayerBG12:
-        case VmbPixelFormatMono12:
-        case VmbPixelFormatRgb12:
-            return 12;
-            
-        case VmbPixelFormatBayerGR16:
-        case VmbPixelFormatBayerRG16:
-        case VmbPixelFormatBayerGB16:
-        case VmbPixelFormatBayerBG16:
-        case VmbPixelFormatMono16:
-        case VmbPixelFormatRgb16:
-            return 16;
-            
-        default:
-            std::cerr << "Unknown pixel format, defaulting to 8 bits" << std::endl;
-            return 8;
-    }
-}
-
-int VimbaController::getChannelsFromFormat(VmbPixelFormatType format) {
-    switch(format) {
-        case VmbPixelFormatRgb8:
-        case VmbPixelFormatRgb10:
-        case VmbPixelFormatRgb12:
-        case VmbPixelFormatRgb16:
-            return 3;  // RGB has 3 channels
-            
-        case VmbPixelFormatBayerGR8:
-        case VmbPixelFormatBayerRG8:
-        case VmbPixelFormatBayerGB8:
-        case VmbPixelFormatBayerBG8:
-        case VmbPixelFormatBayerGR10:
-        case VmbPixelFormatBayerRG10:
-        case VmbPixelFormatBayerGB10:
-        case VmbPixelFormatBayerBG10:
-        case VmbPixelFormatBayerGR12:
-        case VmbPixelFormatBayerRG12:
-        case VmbPixelFormatBayerGB12:
-        case VmbPixelFormatBayerBG12:
-        case VmbPixelFormatBayerGR16:
-        case VmbPixelFormatBayerRG16:
-        case VmbPixelFormatBayerGB16:
-        case VmbPixelFormatBayerBG16:
-        case VmbPixelFormatMono8:
-        case VmbPixelFormatMono10:
-        case VmbPixelFormatMono12:
-        case VmbPixelFormatMono16:
-            return 1;  // Bayer and Mono have 1 channel
-            
-        default:
-            std::cerr << "Unknown pixel format, defaulting to 1 channel" << std::endl;
-            return 1;
-    }
-}
-
 bool VimbaController::readCameraTemperature(VmbCPP::CameraPtr cam, double& temperature) {
     if (cam == nullptr) {
         return false;
@@ -283,151 +70,56 @@ bool VimbaController::readCameraTemperature(VmbCPP::CameraPtr cam, double& tempe
 
 bool VimbaController::saveImageAsTIFF(u_char* buffer, u_int width, u_int height, int bitsPerPixel, VmbPixelFormatType pixelFormat, const std::string& filename) {
     try {
-        cv::Mat image;
+        // Create OpenCV Mat for raw image (12-bit data in 16-bit container)
+        cv::Mat rawImage(height, width, CV_16UC1, (uint16_t*)buffer);
 
-        std::cout << "saveImageAsTIFF called with width=" << width << ", height=" << height
-                  << ", bitsPerPixel=" << bitsPerPixel << ", pixelFormat=0x" << std::hex << pixelFormat << std::dec << std::endl;
-
-        if (pixelFormat == VmbPixelFormatRgb8) {
-            // RGB8 format - convert to grayscale
-            cv::Mat rgb_image(height, width, CV_8UC3, buffer);
-            cv::cvtColor(rgb_image, image, cv::COLOR_RGB2GRAY);
+        if (rawImage.empty() || rawImage.data == NULL) {
+            std::cerr << "ERROR: Failed to create raw image Mat" << std::endl;
+            return false;
         }
-        else if (pixelFormat == VmbPixelFormatMono8) {
-            // Mono8 format - direct grayscale
-            image = cv::Mat(height, width, CV_8UC1, buffer).clone();
+
+        // Perform demosaicing with BayerRG pattern
+        cv::Mat demosaicedImage;
+        cv::cvtColor(rawImage, demosaicedImage, cv::COLOR_BayerRG2BGR);
+
+        if (demosaicedImage.empty() || demosaicedImage.data == NULL) {
+            std::cerr << "ERROR: Demosaicing failed" << std::endl;
+            return false;
         }
-        else if (pixelFormat == VmbPixelFormatBayerGR8 ||
-                 pixelFormat == VmbPixelFormatBayerRG8 ||
-                 pixelFormat == VmbPixelFormatBayerGB8 ||
-                 pixelFormat == VmbPixelFormatBayerBG8) {
-            // Bayer 8-bit formats - need debayering
-            cv::Mat temp(height, width, CV_8UC1, buffer);
-            cv::Mat tempCopy = temp.clone();
 
-            // Check data
-            uint8_t* data8 = reinterpret_cast<uint8_t*>(buffer);
-            uint8_t maxVal = 0;
-            uint8_t minVal = 255;
-            size_t nonZeroCount = 0;
-            for (size_t i = 0; i < (width * height); i++) {
-                uint8_t val = data8[i];
-                if (val > 0) nonZeroCount++;
-                maxVal = std::max(maxVal, val);
-                minVal = std::min(minVal, val);
-            }
+        // Apply 180 degree rotation to match camera orientation
+        cv::Point2f center(width / 2.0f, height / 2.0f);
+        double angle = 180;
+        double scale = 1.0;
 
-            std::cout << "Bayer 8-bit data analysis: min=" << (int)minVal << ", max=" << (int)maxVal
-                      << ", nonZero=" << nonZeroCount << "/" << (width*height) << std::endl;
+        cv::Mat rotation_matrix = cv::getRotationMatrix2D(center, angle, scale);
 
-            // Debayer to RGB
-            int debayerCode;
-            if (pixelFormat == VmbPixelFormatBayerRG8) {
-                debayerCode = cv::COLOR_BayerRG2BGR;
-            } else if (pixelFormat == VmbPixelFormatBayerGR8) {
-                debayerCode = cv::COLOR_BayerGR2BGR;
-            } else if (pixelFormat == VmbPixelFormatBayerGB8) {
-                debayerCode = cv::COLOR_BayerGB2BGR;
-            } else {
-                debayerCode = cv::COLOR_BayerBG2BGR;
-            }
-
-            cv::cvtColor(tempCopy, image, debayerCode);
+        if (rotation_matrix.empty()) {
+            std::cerr << "ERROR: Failed to create rotation matrix" << std::endl;
+            return false;
         }
-        else if (pixelFormat == VmbPixelFormatMono12) {
-            // Mono 12-bit format
-            cv::Mat temp(height, width, CV_16UC1, buffer);
 
-            // Check if data looks like 12-bit in 16-bit containers
-            uint16_t* data16 = reinterpret_cast<uint16_t*>(buffer);
-            uint16_t maxVal = 0;
-            for (size_t i = 0; i < std::min((size_t)1000, (size_t)(width * height)); i++) {
-                maxVal = std::max(maxVal, data16[i]);
-            }
+        cv::Mat rotated_image;
+        cv::warpAffine(demosaicedImage, rotated_image, rotation_matrix, cv::Size(width, height));
 
-            if (maxVal > 4095) {
-                // Data appears to be left-aligned 12-bit (shifted left by 4)
-                temp.convertTo(image, CV_8UC1, 1.0/256.0);
-                std::cout << "Treating as left-aligned 12-bit mono data (max sample: " << maxVal << ")" << std::endl;
-            } else {
-                // Data appears to be right-aligned 12-bit (0-4095 range)
-                temp.convertTo(image, CV_8UC1, 1.0/16.0);
-                std::cout << "Treating as right-aligned 12-bit mono data (max sample: " << maxVal << ")" << std::endl;
-            }
+        if (rotated_image.empty() || rotated_image.data == NULL) {
+            std::cerr << "ERROR: Rotation failed" << std::endl;
+            return false;
         }
-        else if (pixelFormat == VmbPixelFormatBayerGR12 ||
-                 pixelFormat == VmbPixelFormatBayerRG12 ||
-                 pixelFormat == VmbPixelFormatBayerGB12 ||
-                 pixelFormat == VmbPixelFormatBayerBG12) {
-            // Bayer 12-bit formats - need debayering
-            // Clone the data to ensure we have a proper copy
-            cv::Mat temp(height, width, CV_16UC1, buffer);
-            cv::Mat tempCopy = temp.clone();
 
-            // Check alignment
-            uint16_t* data16 = reinterpret_cast<uint16_t*>(buffer);
-            uint16_t maxVal = 0;
-            uint16_t minVal = 65535;
-            size_t nonZeroCount = 0;
-            for (size_t i = 0; i < (width * height); i++) {
-                uint16_t val = data16[i];
-                if (val > 0) nonZeroCount++;
-                maxVal = std::max(maxVal, val);
-                minVal = std::min(minVal, val);
-            }
+        // Normalize to 0-255 range
+        cv::Mat normalized_Image;
+        cv::normalize(rotated_image, normalized_Image, 0, 255, cv::NORM_MINMAX);
 
-            std::cout << "Bayer data analysis: min=" << minVal << ", max=" << maxVal
-                      << ", nonZero=" << nonZeroCount << "/" << (width*height) << std::endl;
-
-            // Normalize to 16-bit range for debayering
-            cv::Mat normalized;
-            if (maxVal > 4095) {
-                // Already in full 16-bit range
-                normalized = tempCopy;
-                std::cout << "Treating as left-aligned 12-bit Bayer data (max sample: " << maxVal << ")" << std::endl;
-            } else {
-                // Scale up 12-bit to 16-bit range
-                tempCopy.convertTo(normalized, CV_16UC1, 16.0);
-                std::cout << "Treating as right-aligned 12-bit Bayer data (max sample: " << maxVal << ")" << std::endl;
-            }
-
-            // Debayer to RGB
-            cv::Mat rgb;
-            int debayerCode;
-            if (pixelFormat == VmbPixelFormatBayerRG12) {
-                debayerCode = cv::COLOR_BayerRG2BGR;
-            } else if (pixelFormat == VmbPixelFormatBayerGR12) {
-                debayerCode = cv::COLOR_BayerGR2BGR;
-            } else if (pixelFormat == VmbPixelFormatBayerGB12) {
-                debayerCode = cv::COLOR_BayerGB2BGR;
-            } else {
-                debayerCode = cv::COLOR_BayerBG2BGR;
-            }
-
-            cv::cvtColor(normalized, rgb, debayerCode);
-
-            // Convert to 8-bit for saving
-            rgb.convertTo(image, CV_8UC3, 1.0/256.0);
-        }
-        else if (pixelFormat == VmbPixelFormatMono16 ||
-                 pixelFormat == VmbPixelFormatBayerGR16 ||
-                 pixelFormat == VmbPixelFormatBayerRG16 ||
-                 pixelFormat == VmbPixelFormatBayerGB16 ||
-                 pixelFormat == VmbPixelFormatBayerBG16) {
-            // 16-bit formats - scale down to 8-bit
-            cv::Mat temp(height, width, CV_16UC1, buffer);
-            temp.convertTo(image, CV_8UC1, 1.0/256.0);
-        }
-        else {
-            // Fallback: assume 8-bit mono
-            std::cout << "Warning: Unknown pixel format, treating as 8-bit mono" << std::endl;
-            image = cv::Mat(height, width, CV_8UC1, buffer);
+        if (normalized_Image.empty() || normalized_Image.data == NULL) {
+            std::cerr << "ERROR: Normalization failed" << std::endl;
+            return false;
         }
 
         // Save as PNG
-        bool success = cv::imwrite(filename, image);
+        bool success = cv::imwrite(filename, normalized_Image);
         if (success) {
-            std::cout << "Image saved as " << filename << " (" << image.cols << "x" << image.rows << ")" << std::endl;
+            std::cout << "Image saved as " << filename << " (" << normalized_Image.cols << "x" << normalized_Image.rows << ")" << std::endl;
         } else {
             std::cerr << "Failed to save image as " << filename << std::endl;
         }
@@ -490,19 +182,6 @@ FramePtr VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, fl
         throw std::runtime_error("Could not turn on camera");
     }
 
-    // Get camera model for configuration
-    std::string cameraModel;
-    cam->GetModel(cameraModel);
-
-    // Get camera-specific configuration
-    CameraConfig config = getCameraConfig(cameraModel);
-
-    std::cout << "\n========== Camera Acquisition Configuration ==========" << std::endl;
-    std::cout << "Camera Model: " << cameraModel << std::endl;
-
-    // Apply camera-specific configuration
-    applyCameraConfig(cam, config);
-
     // Set acquisition mode to single frame
     FeaturePtr pAcquisitionMode;
     VmbErrorType err = cam->GetFeatureByName("AcquisitionMode", pAcquisitionMode);
@@ -513,72 +192,106 @@ FramePtr VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, fl
         }
     }
 
-    // Configure resolution
-    if (config.useFullResolution) {
-        FeaturePtr pOffsetX, pOffsetY, pWidth, pHeight;
+    // Configure camera for full sensor capture
+    // Reset any existing ROI and use maximum available resolution
+    FeaturePtr pOffsetX, pOffsetY, pWidth, pHeight;
 
-        // Reset ROI offsets to 0
-        if (cam->GetFeatureByName("OffsetX", pOffsetX) == VmbErrorSuccess) {
-            pOffsetX->SetValue(0);
-        }
-        if (cam->GetFeatureByName("OffsetY", pOffsetY) == VmbErrorSuccess) {
-            pOffsetY->SetValue(0);
-        }
-
-        // Set to maximum sensor resolution
-        VmbInt64_t minWidth, maxWidth, minHeight, maxHeight;
-        if (cam->GetFeatureByName("Width", pWidth) == VmbErrorSuccess) {
-            if (pWidth->GetRange(minWidth, maxWidth) == VmbErrorSuccess) {
-                VmbInt64_t fullWidth = (maxWidth / 2) * 2;  // Ensure even width
-                pWidth->SetValue(fullWidth);
-                std::cout << "  - Resolution: " << fullWidth;
-            }
-        }
-        if (cam->GetFeatureByName("Height", pHeight) == VmbErrorSuccess) {
-            if (pHeight->GetRange(minHeight, maxHeight) == VmbErrorSuccess) {
-                VmbInt64_t fullHeight = (maxHeight / 2) * 2;  // Ensure even height
-                pHeight->SetValue(fullHeight);
-                std::cout << " x " << fullHeight << std::endl;
-            }
-        }
+    // Reset ROI offsets to 0 (top-left corner)
+    if (cam->GetFeatureByName("OffsetX", pOffsetX) == VmbErrorSuccess) {
+        pOffsetX->SetValue(0);
     }
-    // Set exposure and gain
-    FeaturePtr pExposureFeature, pGainFeature;
-
-    err = cam->GetFeatureByName("ExposureTimeAbs", pExposureFeature);
-    if ( VmbErrorSuccess != err ) {
-        err = cam->GetFeatureByName("ExposureTime", pExposureFeature);
+    if (cam->GetFeatureByName("OffsetY", pOffsetY) == VmbErrorSuccess) {
+        pOffsetY->SetValue(0);
     }
 
-    if (VmbErrorSuccess == err) {
-        err = pExposureFeature->SetValue(exposure);
-        std::cout << "  - Exposure: " << exposure << " µs" << std::endl;
+    // Set to maximum sensor resolution for full image capture
+    VmbInt64_t minWidth, maxWidth, minHeight, maxHeight;
+    if (cam->GetFeatureByName("Width", pWidth) == VmbErrorSuccess) {
+        if (pWidth->GetRange(minWidth, maxWidth) == VmbErrorSuccess) {
+            VmbInt64_t fullWidth = (maxWidth / 2) * 2;  // Ensure even width
+            pWidth->SetValue(fullWidth);
+            std::cout << "Set width to " << fullWidth << " (full sensor width)" << std::endl;
+        }
+    }
+    if (cam->GetFeatureByName("Height", pHeight) == VmbErrorSuccess) {
+        if (pHeight->GetRange(minHeight, maxHeight) == VmbErrorSuccess) {
+            VmbInt64_t fullHeight = (maxHeight / 2) * 2;  // Ensure even height
+            pHeight->SetValue(fullHeight);
+            std::cout << "Set height to " << fullHeight << " (full sensor height)" << std::endl;
+        }
     }
 
-    err = cam->GetFeatureByName("Gain", pGainFeature);
-    if (VmbErrorSuccess == err) {
-        err = pGainFeature->SetValue(gain);
-        std::cout << "  - Gain: " << gain << std::endl;
+    // Configure USB bandwidth limit
+    FeaturePtr pDeviceLinkThroughputLimit;
+    err = cam->GetFeatureByName("DeviceLinkThroughputLimit", pDeviceLinkThroughputLimit);
+    if (err == VmbErrorSuccess) {
+        VmbInt64_t limitValue = 35000000; // 35 MB/s
+        err = pDeviceLinkThroughputLimit->SetValue(limitValue);
+        if (err == VmbErrorSuccess) {
+            std::cout << "Set USB bandwidth limit to " << limitValue << " bytes/sec" << std::endl;
+        }
     }
 
-    std::cout << "======================================================" << std::endl;
+    // Set packet size
+    FeaturePtr pPacketSize;
+    err = cam->GetFeatureByName("GVSPPacketSize", pPacketSize);
+    if (err != VmbErrorSuccess) {
+        err = cam->GetFeatureByName("PacketSize", pPacketSize);
+    }
+    if (err == VmbErrorSuccess) {
+        VmbInt64_t minPacket, maxPacket;
+        if (pPacketSize->GetRange(minPacket, maxPacket) == VmbErrorSuccess) {
+            VmbInt64_t packetSize = std::min((VmbInt64_t)16384, maxPacket);
+            packetSize = std::max(packetSize, minPacket);
+            pPacketSize->SetValue(packetSize);
+            std::cout << "Set packet size to " << packetSize << " bytes" << std::endl;
+        }
+    }
 
-    // Acquire frame with camera-specific timeout
+    // Set stream buffer count
+    FeaturePtr pStreamBufferCount;
+    err = cam->GetFeatureByName("StreamBufferCount", pStreamBufferCount);
+    if (err == VmbErrorSuccess) {
+        pStreamBufferCount->SetValue(25);
+        std::cout << "Set stream buffer count to 25" << std::endl;
+    }
+
+    // Set pixel format
+    FeaturePtr pFormatFeature;
+    err = cam->GetFeatureByName("PixelFormat", pFormatFeature);
+
+    if (VmbErrorSuccess == err)
+    {
+        err = pFormatFeature->SetValue(VmbPixelFormatBayerRG12);
+        if (VmbErrorSuccess != err) {
+            std::cerr << "ERROR: Failed to set pixel format to BayerRG12!" << std::endl;
+        }
+
+        // Set exposure and gain
+        FeaturePtr pExposureFeature, pGainFeature;
+
+        err = cam->GetFeatureByName("ExposureTimeAbs", pExposureFeature);
+        if (VmbErrorSuccess != err) {
+            err = cam->GetFeatureByName("ExposureTime", pExposureFeature);
+        }
+
+        if (VmbErrorSuccess == err) {
+            err = pExposureFeature->SetValue(exposure);
+        }
+
+        err = cam->GetFeatureByName("Gain", pGainFeature);
+
+        if (VmbErrorSuccess == err) {
+            err = pGainFeature->SetValue(gain);
+        }
+    }
+
     FramePtr frame;
-    err = cam->AcquireSingleImage(frame, config.acquisitionTimeout);
+    err = cam->AcquireSingleImage(frame, 90000); // 90 seconds timeout
 
     if (err != VmbErrorSuccess)
     {
         throw std::runtime_error("Could not acquire frame, err=" + std::to_string(err));
-    }
-
-    // Check frame status for incomplete transfers
-    VmbFrameStatusType frameStatus;
-    if (frame->GetReceiveStatus(frameStatus) == VmbErrorSuccess) {
-        std::cout << "Frame receive status: " << frameStatus << std::endl;
-        if (frameStatus != VmbFrameStatusComplete) {
-            std::cerr << "WARNING: Frame is incomplete! Status=" << frameStatus << std::endl;
-        }
     }
 
     // Ensure acquisition is stopped after single image capture
@@ -655,29 +368,25 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
 
             u_char* buffer;
             frame->GetImage(buffer);
-            
+
             // Get the actual pixel format from the frame
             VmbPixelFormatType pixelFormat;
             frame->GetPixelFormat(pixelFormat);
-            int bitsPerPixel = getBitsPerPixelFromFormat(pixelFormat);
-            int channels = getChannelsFromFormat(pixelFormat);
-            
-            
 
             Image img;
             img.size = bufferSize;
             img.width = width;
             img.height = height;
             img.data = new u_char[bufferSize];
-            img.bpp = bitsPerPixel;
-            img.channels = channels;
+            img.bpp = 12;  // BayerRG12 is always 12-bit
+            img.channels = 1;  // Bayer is always 1 channel
             img.timestamp = timestamp;
-            
+
             std::cout << "Captured image with pixel format: 0x" << std::hex << pixelFormat << std::dec
-                      << ", bits per pixel: " << bitsPerPixel 
-                      << ", channels: " << channels
-                      << ", width: " << width 
-                      << ", height: " << height 
+                      << ", bits per pixel: 12"
+                      << ", channels: 1"
+                      << ", width: " << width
+                      << ", height: " << height
                       << ", buffer size: " << bufferSize << " bytes" << std::endl;
             
             // Copy the actual image data from buffer to img.data
@@ -685,7 +394,7 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
 
             // Save image as TIFF
             std::string tiffFilename = "captured_image.tiff";
-            saveImageAsTIFF(buffer, width, height, bitsPerPixel, pixelFormat, tiffFilename);
+            saveImageAsTIFF(buffer, width, height, 12, pixelFormat, tiffFilename);
 
             images.push_back(img);
 
