@@ -42,8 +42,9 @@ csp_dep = dependency('csp', fallback: ['csp', 'csp_dep'])
 param_dep = dependency('param', fallback: ['param', 'param_dep'])
 proto_dep = dependency('protobuf', fallback: ['libprotobuf', 'proto_c_dep'])
 opencv_dep = dependency('opencv4')
+uuid_dep = cpp.find_library('uuid', required: true)
 
-deps = [csp_dep,param_dep,opencv_dep,proto_dep]
+deps = [csp_dep,param_dep,opencv_dep,proto_dep,uuid_dep]
 
 dirs = []
 dirs += include_directories(

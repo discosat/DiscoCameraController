@@ -40,29 +40,35 @@ uint32_t num_images;
 uint32_t interval;
 uint32_t obid;
 uint32_t pipeline_id;
+uint32_t max_processing_latency;
 pthread_mutex_t mutex;
 pthread_cond_t cond;
 
 // For catching ctrl-c
 static volatile int _RUNNING = 1;
-void intHandler(int _) {
+void intHandler(int _)
+{
   _RUNNING = 0;
   pthread_cond_signal(&cond);
 }
 
-void *vmem_server_task(void *param) {
+void *vmem_server_task(void *param)
+{
   vmem_server_loop(param);
   return NULL;
 }
 
-void *router_task(void *param) {
-  while (1) {
+void *router_task(void *param)
+{
+  while (1)
+  {
     csp_route_work();
   }
   return NULL;
 }
 
-void camera_id_param_callback() {
+void camera_id_param_callback()
+{
   char new_camera_id[CAMERA_ID_MAX_LENGTH];
   param_get_string(&camera_id_param, new_camera_id, CAMERA_ID_MAX_LENGTH);
 
@@ -74,7 +80,8 @@ void camera_id_param_callback() {
   param_set_uint8(&camera_state_param, 0);
 }
 
-void camera_state_param_callback() {
+void camera_state_param_callback()
+{
   uint8_t camera_state = param_get_uint8(&camera_state_param);
   char camera_id_str[CAMERA_ID_MAX_LENGTH];
   param_get_string(&camera_id_param, camera_id_str, CAMERA_ID_MAX_LENGTH);
@@ -84,17 +91,23 @@ void camera_state_param_callback() {
            camera_state ? "ON" : "OFF", camera_id_str);
   log_camera(msg);
 
-  if (camera_state == 0) {
+  if (camera_state == 0)
+  {
     set_camera_gpio(NULL, 0);
-  } else if (camera_state == 1) {
+  }
+  else if (camera_state == 1)
+  {
     set_camera_gpio(camera_id_str, 1);
-  } else {
+  }
+  else
+  {
     snprintf(msg, sizeof(msg), "Invalid camera state: %u (should be 0 or 1)", camera_state);
     log_warning(msg);
   }
 }
 
-void capture_param_callback() {
+void capture_param_callback()
+{
 
   uint8_t param_value = param_get_uint8(&capture_param);
 
@@ -103,7 +116,8 @@ void capture_param_callback() {
 
   // Check camera state before allowing capture
   uint8_t camera_state = param_get_uint8(&camera_state_param);
-  if (camera_state != 1) {
+  if (camera_state != 1)
+  {
     char msg[128];
     snprintf(msg, sizeof(msg), "Cannot capture: camera is OFF (state=%d)", camera_state);
     log_error(msg);
@@ -129,6 +143,7 @@ void capture_param_callback() {
   interval = param_get_uint32(&interval_param);
   obid = param_get_uint32(&obid_param);
   pipeline_id = param_get_uint32(&pipeline_id_param);
+  max_processing_latency = param_get_uint32(&max_processing_latency_param);
 
   /*
   strcpy(camera_id, "1800 U-500c");  // Use actual camera
@@ -145,7 +160,8 @@ void capture_param_callback() {
   pthread_mutex_unlock(&mutex);
 }
 
-static void csp_init_fun(void) {
+static void csp_init_fun(void)
+{
   csp_conf.hostname = "Camera";
   csp_conf.model = "DISCO-II";
   csp_conf.revision = "1";
@@ -169,11 +185,13 @@ static void csp_init_fun(void) {
 
 /// @brief Initialize communication interfaces: ZMQ, CAN and KISS
 /// @param interfaceConfig configuration parameters
-static void iface_init(CSPInterface *interfaceConfig) {
+static void iface_init(CSPInterface *interfaceConfig)
+{
   int error = CSP_ERR_NONE;
   csp_iface_t *default_iface = NULL;
 
-  switch (interfaceConfig->Interface) {
+  switch (interfaceConfig->Interface)
+  {
   case ZMQ:
     error = csp_zmqhub_init_filter2(
         "zmq", interfaceConfig->Device, interfaceConfig->Node, 8, true,
@@ -205,11 +223,14 @@ static void iface_init(CSPInterface *interfaceConfig) {
     break;
   }
 
-  if (error != CSP_ERR_NONE) {
+  if (error != CSP_ERR_NONE)
+  {
     csp_print("failed to add interface [%s], error: %d\n",
               interfaceConfig->Device, error);
     exit(1);
-  } else {
+  }
+  else
+  {
     csp_print("Initialized interface:\n\t - Device: [%s]\n\t - Node: %i\n\t - "
               "Interface mode: %s\n",
               interfaceConfig->Device, interfaceConfig->Node,
@@ -224,7 +245,8 @@ static void iface_init(CSPInterface *interfaceConfig) {
 }
 
 void server_start(CSPInterface *interfaceConfig, CallbackFunc callback,
-                  void *obj) {
+                  void *obj)
+{
   pthread_mutex_init(&mutex, NULL);
   pthread_cond_init(&cond, NULL);
 
@@ -242,15 +264,17 @@ void server_start(CSPInterface *interfaceConfig, CallbackFunc callback,
   param_set_string(&capture_param, "", PARAM_MAX_SIZE);
 
   signal(SIGINT, intHandler);
-  while (_RUNNING) {
+  while (_RUNNING)
+  {
     pthread_mutex_lock(&mutex);
     pthread_cond_wait(&cond, &mutex);
     u_int16_t error = 0;
 
-    if (capture > 0 && _RUNNING) {
+    if (capture > 0 && _RUNNING)
+    {
       csp_print("Using camera_id: %s\n", camera_id);
       callback(camera_id, camera_type, exposure, iso, num_images, interval,
-               obid, pipeline_id, obj, &error);
+               obid, pipeline_id, max_processing_latency, obj, &error);
       param_set_uint8(&capture_param, 0); // Reset to zero.
 
       // Turn off the camera after capture is complete

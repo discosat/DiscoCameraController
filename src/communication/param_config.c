@@ -1,6 +1,6 @@
 #include "param_config.h"
 #include "vmem_config.h"
-//#include "measure.h"
+// #include "measure.h"
 #include "csp_server.h"
 #include "temperature_bridge.h"
 
@@ -33,8 +33,7 @@ PARAM_DEFINE_STATIC_VMEM(
     NULL,
     config,
     VMEM_CONF_CAPTURE_PARAM,
-    "Turn on capture by setting a value other than 0."
-);
+    "Turn on capture by setting a value other than 0.");
 
 // Camera ID
 
@@ -49,8 +48,7 @@ PARAM_DEFINE_STATIC_VMEM(
     NULL,
     config,
     VMEM_CONF_CAMERA_ID_PARAM,
-    "The id of the camera to capture with"
-);
+    "The id of the camera to capture with");
 
 // Camera type
 
@@ -69,8 +67,7 @@ PARAM_DEFINE_STATIC_VMEM(
     NULL,
     config,
     VMEM_CONF_CAMERA_TYPE_PARAM,
-    "The camera type to capture with, by default VMB"
-);
+    "The camera type to capture with, by default VMB");
 
 // Camera State Parameter (on/off for current camera type)
 PARAM_DEFINE_STATIC_VMEM(
@@ -84,8 +81,7 @@ PARAM_DEFINE_STATIC_VMEM(
     NULL,
     config,
     VMEM_CONF_CAMERA_STATE_PARAM,
-    "Camera state: 1=on, 0=off (uses camera_id_param to determine which camera)"
-);
+    "Camera state: 1=on, 0=off (uses camera_id_param to determine which camera)");
 
 // Camera Temperature Parameter
 PARAM_DEFINE_STATIC_VMEM(
@@ -99,8 +95,7 @@ PARAM_DEFINE_STATIC_VMEM(
     NULL,
     config,
     VMEM_CONF_CAMERA_TEMPERATURE_PARAM,
-    "Current camera temperature in degrees Celsius"
-);
+    "Current camera temperature in degrees Celsius");
 
 // Exposure
 
@@ -115,8 +110,7 @@ PARAM_DEFINE_STATIC_VMEM(
     NULL,
     config,
     VMEM_CONF_EXPOSURE_PARAM,
-    "Exposure in microseconds. If value is not set, then exposure is estimated."
-);
+    "Exposure in microseconds. If value is not set, then exposure is estimated.");
 
 // ISO
 
@@ -131,8 +125,7 @@ PARAM_DEFINE_STATIC_VMEM(
     NULL,
     config,
     VMEM_CONF_ISO_PARAM,
-    "ISO or gain. By default 1."
-);
+    "ISO or gain. By default 1.");
 
 // Number of images
 
@@ -147,8 +140,7 @@ PARAM_DEFINE_STATIC_VMEM(
     NULL,
     config,
     VMEM_CONF_NUM_IMAGES_PARAM,
-    "Number of images to capture. By default 1."
-);
+    "Number of images to capture. By default 1.");
 
 // Interval
 
@@ -163,8 +155,7 @@ PARAM_DEFINE_STATIC_VMEM(
     NULL,
     config,
     VMEM_CONF_INTERVAL_PARAM,
-    "Delay between images in microseconds (not including exposure). By default 0."
-);
+    "Delay between images in microseconds (not including exposure). By default 0.");
 
 // OBID
 
@@ -179,8 +170,7 @@ PARAM_DEFINE_STATIC_VMEM(
     NULL,
     config,
     VMEM_CONF_OBID_PARAM,
-    "Observation identifier. No default. Is required."
-);
+    "Observation identifier. No default. Is required.");
 
 // Pipeline ID
 
@@ -195,8 +185,21 @@ PARAM_DEFINE_STATIC_VMEM(
     NULL,
     config,
     VMEM_CONF_PIPELINE_ID_PARAM,
-    "Pipeline identifier"
-);
+    "Pipeline identifier");
+
+// Max Processing Latency
+PARAM_DEFINE_STATIC_VMEM(
+    PARAMID_MAX_PROCESSING_LATENCY,
+    max_processing_latency_param,
+    PARAM_TYPE_UINT32,
+    -1,
+    0,
+    PM_CONF,
+    NULL,
+    NULL,
+    config,
+    VMEM_CONF_MAX_PROCESSING_LATENCY,
+    "Maximum processing latency in seconds");
 
 // Error log
 
@@ -211,5 +214,4 @@ PARAM_DEFINE_STATIC_VMEM(
     NULL,
     config,
     VMEM_CONF_ERROR_PARAM,
-    "Latest error code"
-);
+    "Latest error code");
