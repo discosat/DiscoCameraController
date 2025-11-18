@@ -378,6 +378,10 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
                 // Power off camera via GPIO
                 set_camera_gpio(NULL, 0);
 
+                // Wait for camera capacitors to discharge (ensures clean power cycle)
+                DiscoLogger::camera("Waiting 500ms for power-down...");
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
                 // Apply interval delay (if specified)
                 if(capture_instructions.Interval > 0){
                     std::this_thread::sleep_for(std::chrono::milliseconds(capture_instructions.Interval));
@@ -386,9 +390,9 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
                 // Power on camera via GPIO
                 set_camera_gpio(capture_instructions.CameraId.c_str(), 1);
 
-                // Wait for camera initialization (typical 2 seconds)
-                DiscoLogger::camera("Waiting 2s for camera initialization...");
-                std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+                // Wait for camera initialization and USB enumeration (increased for reliability)
+                DiscoLogger::camera("Waiting 3.5s for camera initialization and USB enumeration...");
+                std::this_thread::sleep_for(std::chrono::milliseconds(3500));
 
                 // Re-enumerate cameras after power cycle
                 cameras = this->getCameras();

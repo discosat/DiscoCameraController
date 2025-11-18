@@ -13,7 +13,10 @@
 extern "C" {
 #include "csp_server.h"
 #include "temperature_bridge.h"
+#include <vmem/vmem_file.h>
 }
+
+extern "C" vmem_t vmem_config;
 
 namespace fs = std::filesystem;
 
@@ -71,6 +74,8 @@ Arguments:
 Optional:
   -D             Debug option used during experiments
   -M MESSAGE     Debug message to simulate a CSP param callback
+  -v DIR         Directory path for vmem files.
+                 Default: current directory
 )""";
 
   std::cout << help << std::endl;
@@ -92,6 +97,7 @@ int main(int argc, char *argv[], char *envp[]) {
   const std::string_view device_arg = get_option(args, "-d");
   const std::string_view node_arg = get_option(args, "-n");
   const std::string_view port_arg = get_option(args, "-p");
+  const std::string_view vmem_dir_arg = get_option(args, "-v");
   int node = 2, port = 10;
   std::string device = "localhost", interface = "zmq";
 
@@ -109,6 +115,15 @@ int main(int argc, char *argv[], char *envp[]) {
 
   if (interface_arg.size() > 0) {
     interface = std::string(interface_arg);
+  }
+
+  // Set vmem directory path if provided
+  if (vmem_dir_arg.size() > 0) {
+    std::string vmem_dir = std::string(vmem_dir_arg);
+    std::string vmem_full_path = vmem_dir + "/config.vmem";
+    ((vmem_file_driver_t *)vmem_config.driver)->filename = strdup(vmem_full_path.c_str());
+    std::cout << "Using vmem directory: " << vmem_dir << std::endl;
+    std::cout << "Config vmem file: " << vmem_full_path << std::endl;
   }
 
   CaptureController *captureController = new CaptureController();
