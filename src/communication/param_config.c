@@ -55,8 +55,8 @@ PARAM_DEFINE_STATIC_VMEM(
 // Camera type
 
 // Forward declaration of camera callbacks
-void camera_state_param_callback();
-void camera_id_param_callback();
+void camera_state_param_callback(param_t * param, int offset);
+void camera_id_param_callback(param_t * param, int offset);
 
 PARAM_DEFINE_STATIC_VMEM(
     PARAMID_CAMERA_TYPE_PARAM,
@@ -95,11 +95,26 @@ PARAM_DEFINE_STATIC_VMEM(
     -1,
     0,
     PM_READONLY,
-    camera_temperature_callback,
+    NULL,
     NULL,
     config,
     VMEM_CONF_CAMERA_TEMPERATURE_PARAM,
     "Current camera temperature in degrees Celsius"
+);
+
+// Camera Temperature Read Trigger
+PARAM_DEFINE_STATIC_VMEM(
+    PARAMID_CAMERA_TEMP_READ_PARAM,
+    camera_temp_read_param,
+    PARAM_TYPE_UINT8,
+    -1,
+    0,
+    PM_CONF,
+    camera_temperature_callback,
+    NULL,
+    config,
+    VMEM_CONF_CAMERA_TEMP_READ_PARAM,
+    "Write any value to trigger camera temperature read"
 );
 
 // Exposure

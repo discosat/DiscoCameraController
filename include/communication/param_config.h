@@ -7,6 +7,7 @@ extern param_t camera_id_param;
 extern param_t camera_type_param;
 extern param_t camera_state_param;
 extern param_t camera_temperature_param;
+extern param_t camera_temp_read_param;
 extern param_t exposure_param;
 extern param_t iso_param;
 extern param_t num_images_param;
@@ -42,6 +43,7 @@ extern param_t error_log;
 #define PARAMID_OBID_PARAM          10
 #define PARAMID_PIPELINE_ID_PARAM   11
 #define PARAMID_ERROR_LOG           12
+#define PARAMID_CAMERA_TEMP_READ_PARAM 13
 
 #define PARAM_MAX_SIZE 512
 
@@ -49,10 +51,10 @@ extern param_t error_log;
 #ifdef __cplusplus
 extern "C" {
 #endif
-void capture_param_callback();
-void camera_id_param_callback();
-void camera_state_param_callback();
-void camera_temperature_callback();
+void capture_param_callback(param_t * param, int offset);
+void camera_id_param_callback(param_t * param, int offset);
+void camera_state_param_callback(param_t * param, int offset);
+void camera_temperature_callback(param_t * param, int offset);
 #ifdef __cplusplus
 }
 #endif

@@ -62,7 +62,9 @@ void *router_task(void *param) {
   return NULL;
 }
 
-void camera_id_param_callback() {
+void camera_id_param_callback(param_t *param, int index) {
+  (void)param;
+  (void)index;
   char new_camera_id[CAMERA_ID_MAX_LENGTH];
   param_get_string(&camera_id_param, new_camera_id, CAMERA_ID_MAX_LENGTH);
 
@@ -74,7 +76,9 @@ void camera_id_param_callback() {
   param_set_uint8(&camera_state_param, 0);
 }
 
-void camera_state_param_callback() {
+void camera_state_param_callback(param_t *param, int index) {
+  (void)param;
+  (void)index;
   uint8_t camera_state = param_get_uint8(&camera_state_param);
   char camera_id_str[CAMERA_ID_MAX_LENGTH];
   param_get_string(&camera_id_param, camera_id_str, CAMERA_ID_MAX_LENGTH);
@@ -94,8 +98,9 @@ void camera_state_param_callback() {
   }
 }
 
-void capture_param_callback() {
-
+void capture_param_callback(param_t *param, int index) {
+  (void)param;
+  (void)index;
   uint8_t param_value = param_get_uint8(&capture_param);
 
   if (!param_value)
@@ -234,12 +239,16 @@ void server_start(CSPInterface *interfaceConfig, CallbackFunc callback,
   // Parameter storage
   vmem_file_init(&vmem_config);
 
+  // Set default camera ID on startup
+  param_set_string(&camera_id_param, "1800 U-811c", strlen("1800 U-811c") + 1);
+  log_info("Default camera ID set to: 1800 U-811c");
+
   // Interfaces
   iface_init(interfaceConfig);
 
   // Initialize CSP
   csp_init_fun();
-  param_set_string(&capture_param, "", PARAM_MAX_SIZE);
+  param_set_uint8(&capture_param, 0);
 
   signal(SIGINT, intHandler);
   while (_RUNNING) {

@@ -39,8 +39,6 @@ inline CSPInterfaceType StringToCSPInterface(const char* name)
     }
 }
 
-void capture_param_callback();
-
 void server_start(CSPInterface *interfaceConfig, CallbackFunc callback, void* obj);
 
 #endif

@@ -69,9 +69,11 @@ extern "C" {
         }
     }
     
-    void camera_temperature_callback() {
-        // This callback is triggered when someone accesses the temperature parameter
-        // We update the temperature on-demand rather than continuously
+    void camera_temperature_callback(param_t * param, int offset) {
+        (void)param;  // unused
+        (void)offset; // unused
+        // This callback is triggered when someone sets the trigger parameter
+        // We update the temperature on-demand
         read_camera_temperature_on_demand();
     }
 }

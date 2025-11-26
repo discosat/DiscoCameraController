@@ -16,5 +16,6 @@ extern vmem_t vmem_config;
 #define VMEM_CONF_OBID_PARAM 0x514  // 0x0b0          // 4 bytes
 #define VMEM_CONF_PIPELINE_ID_PARAM 0x578  // 0x0d0   // 4 bytes
 #define VMEM_CONF_ERROR_PARAM 0x5dc  // 0x0f0         // 2 bytes
+#define VMEM_CONF_CAMERA_TEMP_READ_PARAM 0x5de  // 0x0f2   // 1 byte (trigger)
 
 #endif /* VMEM_CONFIG_H */
