@@ -108,7 +108,7 @@ bool VimbaController::turnOffCamera(VmbCPP::CameraPtr cam){
     if (stopErr == VmbErrorSuccess) {
         pAcquisitionStop->RunCommand();
     }
-    
+
     FeaturePtr powerSavingFeature;
     VmbErrorType err = cam->GetFeatureByName( "DevicePowerSavingMode", powerSavingFeature );
 
@@ -118,6 +118,45 @@ bool VimbaController::turnOffCamera(VmbCPP::CameraPtr cam){
     } else {
         return false;
     }
+}
+
+bool VimbaController::suspendCamera(VmbCPP::CameraPtr cam){
+    // Stop any ongoing acquisition
+    FeaturePtr pAcquisitionStop;
+    VmbErrorType stopErr = cam->GetFeatureByName("AcquisitionStop", pAcquisitionStop);
+    if (stopErr == VmbErrorSuccess) {
+        pAcquisitionStop->RunCommand();
+    }
+
+    // Put camera into suspend mode (low power state, fast wake-up)
+    FeaturePtr powerSavingFeature;
+    VmbErrorType err = cam->GetFeatureByName("DevicePowerSavingMode", powerSavingFeature);
+
+    if (VmbErrorSuccess == err) {
+        err = powerSavingFeature->SetValue("SuspendMode");
+        if (VmbErrorSuccess == err) {
+            DiscoLogger::camera("Camera suspended (DevicePowerSavingMode=SuspendMode)");
+            return true;
+        }
+    }
+    DiscoLogger::warning("Failed to suspend camera");
+    return false;
+}
+
+bool VimbaController::wakeCamera(VmbCPP::CameraPtr cam){
+    // Wake camera from suspend mode
+    FeaturePtr powerSavingFeature;
+    VmbErrorType err = cam->GetFeatureByName("DevicePowerSavingMode", powerSavingFeature);
+
+    if (VmbErrorSuccess == err) {
+        err = powerSavingFeature->SetValue("Disabled");
+        if (VmbErrorSuccess == err) {
+            DiscoLogger::camera("Camera woken (DevicePowerSavingMode=Disabled)");
+            return true;
+        }
+    }
+    DiscoLogger::warning("Failed to wake camera");
+    return false;
 }
 
 FramePtr VimbaController::aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain){
@@ -368,76 +407,35 @@ std::vector<Image> VimbaController::Capture(CaptureMessage& capture_instructions
 
             images.push_back(img);
 
-            // Power cycle camera between captures (if more images remain)
+            // Suspend camera between captures (if more images remain)
             if(i < capture_instructions.NumberOfImages - 1){
-                DiscoLogger::camera("Power cycling camera between captures...");
+                DiscoLogger::camera("Suspending camera between captures...");
 
-                // Close camera before powering off
-                cam->Close();
+                // Suspend camera (keeps GPIO power on, uses DevicePowerSavingMode)
+                this->suspendCamera(cam);
 
-                // Power off camera via GPIO
-                set_camera_gpio(NULL, 0);
-
-                // Wait for camera capacitors to discharge (ensures clean power cycle)
-                DiscoLogger::camera("Waiting 500ms for power-down...");
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                // Set camera state param to suspend (2)
+                param_set_uint8(&camera_state_param, 2);
 
                 // Apply interval delay (if specified)
                 if(capture_instructions.Interval > 0){
+                    std::stringstream interval_ss;
+                    interval_ss << "Waiting " << capture_instructions.Interval << "ms interval...";
+                    DiscoLogger::camera(interval_ss.str());
                     std::this_thread::sleep_for(std::chrono::milliseconds(capture_instructions.Interval));
                 }
 
-                // Power on camera via GPIO
-                set_camera_gpio(capture_instructions.CameraId.c_str(), 1);
+                // Wake camera from suspend
+                this->wakeCamera(cam);
 
-                // Wait for camera initialization and USB enumeration (increased for reliability)
-                DiscoLogger::camera("Waiting 3.5s for camera initialization and USB enumeration...");
-                std::this_thread::sleep_for(std::chrono::milliseconds(3500));
+                // Set camera state param back to on (1)
+                param_set_uint8(&camera_state_param, 1);
 
-                // Re-enumerate cameras after power cycle
-                cameras = this->getCameras();
-                cam.reset();
-
-                // Find the camera again
-                for(size_t j = 0; j < cameras.size(); j++){
-                    std::string camName;
-                    cameras.at(j)->GetModel(camName);
-                    if(camName == capture_instructions.CameraId){
-                        cam = cameras.at(j);
-                        break;
-                    }
-                }
-
-                if(!cam){
-                    DiscoLogger::error("Failed to re-open camera after power cycle!");
-                    // Clean up any partial images
-                    for (size_t j = 0; j < images.size(); j++) {
-                        delete[] images.at(j).data;
-                    }
-                    images.clear();
-                    *error = ERROR_CODE::CAPTURE_ERROR;
-                    set_camera_gpio(NULL, 0); // Ensure camera is off on error
-                    return images;
-                }
-
-                // Re-open camera for next capture
-                VmbErrorType openErr = cam->Open(VmbAccessModeExclusive);
-                if (openErr != VmbErrorSuccess) {
-                    std::stringstream ss;
-                    ss << "Failed to re-open camera after power cycle (error: " << openErr << ")";
-                    DiscoLogger::error(ss.str());
-                    // Clean up any partial images
-                    for (size_t j = 0; j < images.size(); j++) {
-                        delete[] images.at(j).data;
-                    }
-                    images.clear();
-                    *error = ERROR_CODE::CAPTURE_ERROR;
-                    set_camera_gpio(NULL, 0); // Ensure camera is off on error
-                    return images;
-                }
+                // Small delay to allow camera to stabilize after wake
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
                 std::stringstream success_ss;
-                success_ss << "Camera re-initialized, ready for capture " << (i+2)
+                success_ss << "Camera ready for capture " << (i+2)
                           << "/" << capture_instructions.NumberOfImages;
                 DiscoLogger::success(success_ss.str());
             }

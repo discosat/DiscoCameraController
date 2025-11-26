@@ -84,16 +84,23 @@ void camera_state_param_callback(param_t *param, int index) {
   param_get_string(&camera_id_param, camera_id_str, CAMERA_ID_MAX_LENGTH);
 
   char msg[256];
+  const char* state_str = (camera_state == 0) ? "OFF" :
+                          (camera_state == 1) ? "ON" :
+                          (camera_state == 2) ? "SUSPEND" : "UNKNOWN";
   snprintf(msg, sizeof(msg), "Camera state change: %s (camera: %s)",
-           camera_state ? "ON" : "OFF", camera_id_str);
+           state_str, camera_id_str);
   log_camera(msg);
 
   if (camera_state == 0) {
     set_camera_gpio(NULL, 0);
   } else if (camera_state == 1) {
     set_camera_gpio(camera_id_str, 1);
+  } else if (camera_state == 2) {
+    // Suspend state: keep GPIO power on but camera will be put in suspend mode
+    // The actual suspend is handled by VimbaController when it detects state=2
+    log_camera("Camera suspend requested - GPIO power maintained, software suspend active");
   } else {
-    snprintf(msg, sizeof(msg), "Invalid camera state: %u (should be 0 or 1)", camera_state);
+    snprintf(msg, sizeof(msg), "Invalid camera state: %u (should be 0, 1, or 2)", camera_state);
     log_warning(msg);
   }
 }

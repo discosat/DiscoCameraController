@@ -33,6 +33,16 @@ uchar* CaptureController::createImageMessageData(std::vector<Image> &images, Cap
         metadata.set_camera(capture_instructions.CameraId);
         metadata.set_obid(capture_instructions.OBID);
 
+        // Add exposure as custom metadata item
+        MetadataItem* exposure_item = metadata.add_items();
+        exposure_item->set_key("exposure");
+        exposure_item->set_int_value(capture_instructions.Exposure);
+
+        // Add ISO as custom metadata item
+        MetadataItem* iso_item = metadata.add_items();
+        iso_item->set_key("iso");
+        iso_item->set_float_value(static_cast<float>(capture_instructions.ISO));
+
         uint metadataSize = (uint)metadata.ByteSizeLong();
         uchar* metadataBuffer = new uchar[metadataSize];
         metadata.SerializeToArray(metadataBuffer, metadataSize);
@@ -123,6 +133,7 @@ void CaptureController::Capture(CaptureMessage capture_instructions, u_int16_t* 
 
     if(mq->SendImage(batch, error)){
         DiscoLogger::success("Image batch sent successfully!");
+        *error = ERROR_CODE::SUCCESS;
     } else {
         DiscoLogger::error("Failed to send image batch!");
     }

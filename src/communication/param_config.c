@@ -72,7 +72,7 @@ PARAM_DEFINE_STATIC_VMEM(
     "The camera type to capture with, by default VMB"
 );
 
-// Camera State Parameter (on/off for current camera type)
+// Camera State Parameter (on/off/suspend for current camera type)
 PARAM_DEFINE_STATIC_VMEM(
     PARAMID_CAMERA_STATE_PARAM,
     camera_state_param,
@@ -84,7 +84,7 @@ PARAM_DEFINE_STATIC_VMEM(
     NULL,
     config,
     VMEM_CONF_CAMERA_STATE_PARAM,
-    "Camera state: 1=on, 0=off (uses camera_id_param to determine which camera)"
+    "Camera state: 0=off, 1=on, 2=suspend (uses camera_id_param to determine which camera)"
 );
 
 // Camera Temperature Parameter

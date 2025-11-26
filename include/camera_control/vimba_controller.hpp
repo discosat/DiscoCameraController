@@ -15,6 +15,8 @@ class VimbaController: public CameraController {
         VmbCPP::FramePtr aqcuireFrame(VmbCPP::CameraPtr cam, float exposure, float gain);
         bool turnOnCamera(VmbCPP::CameraPtr cam);
         bool turnOffCamera(VmbCPP::CameraPtr cam);
+        bool suspendCamera(VmbCPP::CameraPtr cam);
+        bool wakeCamera(VmbCPP::CameraPtr cam);
         bool readCameraTemperature(VmbCPP::CameraPtr cam, double& temperature);
 
     public:
