@@ -33,6 +33,21 @@ uchar* CaptureController::createImageMessageData(std::vector<Image> &images, Cap
         metadata.set_camera(capture_instructions.CameraId);
         metadata.set_obid(capture_instructions.OBID);
 
+        // Add exposure as custom metadata item
+        MetadataItem* exposure_item = metadata.add_items();
+        exposure_item->set_key("exposure");
+        exposure_item->set_int_value(capture_instructions.Exposure);
+
+        // Add ISO as custom metadata item
+        MetadataItem* iso_item = metadata.add_items();
+        iso_item->set_key("iso");
+        iso_item->set_float_value(static_cast<float>(capture_instructions.ISO));
+
+        // Add pipeline_id as custom metadata item
+        MetadataItem* pipeline_item = metadata.add_items();
+        pipeline_item->set_key("pipeline_id");
+        pipeline_item->set_int_value(capture_instructions.PipelineId);
+
         uint metadataSize = (uint)metadata.ByteSizeLong();
         uchar* metadataBuffer = new uchar[metadataSize];
         metadata.SerializeToArray(metadataBuffer, metadataSize);
